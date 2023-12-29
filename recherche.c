@@ -2,10 +2,13 @@
 #include<stdlib.h>
 #include<stdbool.h>
 
+
 typedef struct 
 {
     char enregistrement[200];
     int nb_enr;
+    bool suppresion[100];//pour savoir le numero des enregistrement supprimmer
+    bool chevauchement;//si il y a un chevauchement dans le block
 }block;
 typedef struct 
 {
@@ -27,6 +30,6 @@ void recherche(char c[],bool *trouv,int *i,int *j ,fichier f)
     int bi;//borne inferieur
     int bs;//borne sup
     bool trouv;
-    
+
 
 }
