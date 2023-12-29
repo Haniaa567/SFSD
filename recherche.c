@@ -52,12 +52,32 @@ block* Entete(fichier F, int i)
         break;
     } 
 } 
+int allocblock(fichier f)
+{
+    //retourn le numero de block allouee
+    block *bloc=malloc(sizeof(block));
+    (bloc)->nb_enr=0;//normalemet on utilise la fonction affecter en tete block
+    bloc->chevauchement=false;
+    bloc->svt=NULL;
+    int cpt=1;
+    block *x=Entete(f,1);//l'adresse de debut
+    while ((x)->svt!=NULL)
+    {
+        cpt++;
+        x=x->svt;
+    }
+    x->svt=bloc;
+    f.fin=bloc;//normalemet on utilise la fonction affecter en tete
+    return cpt++;
+}
+
 bool* enteteblock(fichier f,int i,int num)
 {
     int cpt=1;
-    block *x=Entete(f,1);
+    block *x=Entete(f,1);//l'adresse de debut
     while (cpt!=i && (x)!=NULL)
     {
+        cpt++;
         x=x->svt;
     }
     switch (num)
@@ -89,6 +109,7 @@ void lireblock(fichier f,int i,char buffer[200])
     block *n_block=Entete(f,1);
     while (cpt!=i && (n_block)!=NULL)
     {
+        cpt++;
         n_block=n_block->svt;
     }
     if ((n_block)!=NULL)
@@ -103,6 +124,23 @@ void lireblock(fichier f,int i,char buffer[200])
     
 
 }
+
+void ecrireblock(fichier f,int i,char buffer[])
+{
+    int cpt=1;
+    block *x=Entete(f,1);//l'adresse de debut
+    while (cpt!=i && (x)!=NULL)
+    {
+        cpt++;
+        x=x->svt;
+    }
+    if (x!=NULL)
+    {
+        strcpy(x->enregistrement,buffer);
+    }
+}
+
+
 
 
 //en entrée la clé (c) à chercher et le fichier.
