@@ -48,10 +48,40 @@ block* Entete(fichier F, int i)
         break; 
     default:
         break;
-    }
-    
+    } 
 } 
-void lireblock(fichier f,int i,char buffer[200])
+bool enteteblock(fichier f,int i,int num)
+{
+    int cpt=1;
+    block *x=Entete(f,1);
+    while (cpt!=i && (x)!=NULL)
+    {
+        x=x->svt;
+    }
+    switch (i)
+    {
+    case 0:
+        return x->chevauchement;
+        break;
+    case 1:
+        return x->suppresion;
+        break;
+    
+    default:
+        break;
+    }
+
+}
+int Enteteblock(block x,int i)
+{
+    if (i==3)
+    {
+        return x.nb_enr;
+    }
+    return;
+    
+}
+void lireblock(fichier f,int i,char *buffer[200])
 {
     int cpt=1;
     block *n_block=Entete(f,1);
@@ -91,6 +121,7 @@ void recherche(char c[],bool *trouv,int *i,int *j ,fichier f)
     char buffer[200];
     char *strtoken1;
     char *strtoken2;
+    char enregistremet[200];
     *j=0;
     *i=1;
     while (!(*trouv) && !(stop) && *i<=nb_block)
@@ -99,14 +130,42 @@ void recherche(char c[],bool *trouv,int *i,int *j ,fichier f)
         strtoken1=strtok(buffer, "$");//$ est le separateur d'enregistrement
         while ( strtoken1 != NULL ) {
             strtoken2=strtok(buffer, "#");//# est le separateur d'atribut
+            strcpy(enregistremet,strtoken1);
             if (strcmp(strtoken2,c)==0)//la cle se trouve dans le premier champs
             {
                 trouv=true;
             }
-            strtoken1 = strtok ( NULL, "$" );//recuperer le prochain enregistrement
-        }
-        (*i)++;
+            if (strcmp(strtoken2,c)>0)
+            {
+                stop=true;
+                (*j)--;
+            }
+            
+            (*j)++;
+            strtoken1 = strtok ( NULL, "$" );//recuperer le prochain enregistrement 
+            char buffer2[200];
+            bool chevauchement=enteteblock(f,i,0);
+            if (strtoken1==NULL && !trouv && chevauchement)
+                {
+                    lireblock(f,*(i+1),buffer2);
+                    strtoken1=strtok(buffer2, "$");//$ est le separateur d'enregistrement
+                    strcat(enregistremet,buffer2);
+                    strtoken2=strtok(enregistremet, "#");
+                    if (strcmp(strtoken2,c)==0)//la cle se trouve dans le premier champs
+                    {
+                        trouv=true;
+                    }   
+                    if (strcmp(strtoken2,c)>0)
+                    {
+                        stop=true;
+                        (*j)--;
+                    } 
+                }   
+            }
+            (*i)++;
     }
+    
+    
         
 
     
