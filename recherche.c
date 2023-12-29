@@ -162,12 +162,12 @@ void lireblock(fichier f,int i,char buffer[200])
 
 }
 
-void ecrireblock(fichier f,int i,char buffer[],bool chevauchement)
+void ecrireblock(fichier f,int i,char buffer[])
 {
     int cpt=1;
     int occ=compterOccurrences(buffer,'$');
     block *x=Entete(f,1);//l'adresse de debut
-    block *prd;
+    block *prd=x;
     while (cpt!=i && (x)!=NULL)
     {
         cpt++;
@@ -179,7 +179,11 @@ void ecrireblock(fichier f,int i,char buffer[],bool chevauchement)
         strcpy(x->enregistrement,buffer);
         x->ocup=f.taille_block;
         x->res=0;
-        if (chevauchement)
+        if (x->enregistrement[f.taille_block]=='$')
+        {
+            x->chevauchement=false;
+        }
+        else
         {
             x->chevauchement=true;
         }
@@ -187,7 +191,7 @@ void ecrireblock(fichier f,int i,char buffer[],bool chevauchement)
         {
             x->nb_enr=occ+1;
         }
-        if (chevauchement && occ==0)
+        if (x->chevauchement && occ==0)
         {
             x->nb_enr=-1;
         }
@@ -195,9 +199,6 @@ void ecrireblock(fichier f,int i,char buffer[],bool chevauchement)
         {
             x->nb_enr=occ;
         }
-        
-        
-       
         for (int i = 0; i < x->nb_enr; i++)
         {
             x->suppresion[i]=0;
@@ -235,6 +236,7 @@ void recherche(char c[],bool *trouv,int *i,int *j ,fichier f)
         
         strtoken1=strtok_r(buffer, "$", &saveptr1);//$ est le separateur d'enregistrement
         while ( strtoken1 != NULL ) {
+            *j=0;
             strcpy(tmp,strtoken1);
             strtoken2=strtok_r(tmp, "#", &saveptr2);//# est le separateur d'atribut
             strcpy(enregistremet,strtoken2);
@@ -256,7 +258,7 @@ void recherche(char c[],bool *trouv,int *i,int *j ,fichier f)
             chevauchement=enteteblock(f,*i,0);//le cas ou il y a un chevauchement dans le block
             if (strtoken1==NULL && !trouv && *chevauchement==true)
             {
-                lireblock(f,*(i),buffer2);
+                lireblock(f,*(i+1),buffer2);
                 strtoken1=strtok_r(buffer2, "$",&saveptr1);//$ est le separateur d'enregistrement
                 strcat(enregistremet,buffer2);
                 strtoken2=strtok_r(enregistremet, "#",&saveptr2);
@@ -284,18 +286,18 @@ int main()
     printf("test1\n");
     int i=allocblock(&f);
     printf("test2\n");
-    ecrireblock(f,i,"1#$2#$23#$",false);
+    ecrireblock(f,i,"1#$2#$23#$");
     printf("test3\n");
     i=allocblock(&f);
     printf("test3,5\n");
-    ecrireblock(f,i,"26#$3465#$",false);
+    ecrireblock(f,i,"26#$3465#$");
     i=allocblock(&f);
     printf("test4\n");
-    ecrireblock(f,i,"45678902#$",false);
+    ecrireblock(f,i,"45678902#$");
     bool trouv=false;
     int j;
     printf("test5\n");
-    recherche("23",&trouv,&i,&j,f);
+    recherche("3456",&trouv,&i,&j,f);
     printf("test6\n");
     if (trouv==true)
     {
