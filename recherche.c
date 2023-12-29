@@ -39,7 +39,7 @@ block* Entete(fichier F, int i)
 {
     return F.debut;
 } 
-void lireblock(fichier f,int i,char buffer[100])
+void lireblock(fichier f,int i,char buffer[200])
 {
     int cpt=1;
     block *n_block=Entete(f,1);
@@ -71,12 +71,24 @@ void recherche(char c[],bool *trouv,int *i,int *j ,fichier f)
     int *bi;//borne inferieur
     int bs;//borne sup
     bool stop;
+    int sizeblock=entete(f,2);
     stop=false;
     *trouv=false;
     (*bi)=entete(f,1);
-
+    char buffer[200];
+    char *strtokern1;
     while (!(*trouv) || !(stop))
     {
+        lireblock(f,1,buffer);
+        strtokern1=strtok(buffer, "$");
+        while(!stop && j<sizeblock)
+        {
+            if (c)
+            {
+                /* code */
+            }
+            
+        }
         
     }
     
