@@ -52,7 +52,7 @@ block* Entete(fichier F, int i)
         break;
     } 
 } 
-bool enteteblock(fichier f,int i,int num)
+bool* enteteblock(fichier f,int i,int num)
 {
     int cpt=1;
     block *x=Entete(f,1);
@@ -63,10 +63,10 @@ bool enteteblock(fichier f,int i,int num)
     switch (num)
     {
     case 0:
-        return x->chevauchement;
+        return &x->chevauchement;
         break;
     case 1:
-        return x->suppresion[0];
+        return x->suppresion;
         break;
     default:
         return -1;
@@ -112,18 +112,17 @@ void recherche(char c[],bool *trouv,int *i,int *j ,fichier f)
     //c est l'element rechercher
     //i le num de block ou devrait ce trouver c
     //j la position de c dans le block
-    int *bi;//borne inferieur
-    int bs;//borne sup
+    char buffer2[200];
     bool stop;
     int nb_block=entete(f,0);
     int sizeblock=entete(f,2);
     stop=false;
     *trouv=false;
-    (*bi)=entete(f,1);
     char buffer[200];
     char *strtoken1;
     char *strtoken2;
     char enregistremet[200];
+    bool *chevauchement;
     *j=0;
     *i=1;
     while (!(*trouv) && !(stop) && *i<=nb_block)
@@ -145,26 +144,28 @@ void recherche(char c[],bool *trouv,int *i,int *j ,fichier f)
             
             (*j)++;
             strtoken1 = strtok ( NULL, "$" );//recuperer le prochain enregistrement 
-            char buffer2[200];
-            bool chevauchement=enteteblock(f,*i,0);//le cas ou il y a un chevauchement dans le block
-            if (strtoken1==NULL && !trouv && chevauchement)
-                {
-                    lireblock(f,*(i+1),buffer2);
-                    strtoken1=strtok(buffer2, "$");//$ est le separateur d'enregistrement
-                    strcat(enregistremet,buffer2);
-                    strtoken2=strtok(enregistremet, "#");
-                    if (strcmp(strtoken2,c)==0)//la cle se trouve dans le premier champs
-                    {
-                        (*trouv)=true;
-                    }   
-                    if (strcmp(strtoken2,c)>0)
-                    {
-                        stop=true;
-                        (*j)--;
-                    } 
-                }   
+            
             }
             (*i)++;
+            
+            chevauchement=enteteblock(f,*i,0);//le cas ou il y a un chevauchement dans le block
+            if (strtoken1==NULL && !trouv && *chevauchement)
+            {
+                lireblock(f,*(i),buffer2);
+                strtoken1=strtok(buffer2, "$");//$ est le separateur d'enregistrement
+                strcat(enregistremet,buffer2);
+                strtoken2=strtok(enregistremet, "#");
+                if (strcmp(strtoken2,c)==0)//la cle se trouve dans le premier champs
+                {
+                    (*trouv)=true;
+                }   
+                if (strcmp(strtoken2,c)>0)
+                {
+                    stop=true;
+                    (*j)--;
+                } 
+            }   
+            
     }
 }
 int main()
