@@ -1,6 +1,7 @@
 #include<stdio.h>
 #include<stdlib.h>
 #include<stdbool.h>
+#include<string.h>
 
 
 typedef struct 
@@ -9,13 +10,14 @@ typedef struct
     int nb_enr;
     bool suppresion[100];//pour savoir le numero des enregistrement supprimmer
     bool chevauchement;//si il y a un chevauchement dans le block
+    block *svt;
 }block;
 typedef struct 
 {
     int nb_block;
     int taille_block;
     bool supp_logique;
-    block* debut;
+    block *debut;
 }fichier;
 int entete(fichier F,int i)
 {
@@ -24,15 +26,38 @@ int entete(fichier F,int i)
     case 0:
         return F.nb_block;
         break;
-    case 1:
-        return F.debut;
-        break;
-    case 3:
+    case 2:
         return F.taille_block;
-        break;    
+        break;      
+    
     default:
         break;
     }
+}
+
+block* Entete(fichier F, int i)
+{
+    return F.debut;
+} 
+void lireblock(fichier f,int i,char buffer[100])
+{
+    int cpt=1;
+    block *n_block=Entete(f,1);
+    while (cpt!=i && (n_block)!=NULL)
+    {
+        n_block=n_block->svt;
+    }
+    if ((n_block)!=NULL)
+    {
+        strcpy(buffer,(n_block)->enregistrement);
+    }
+    else
+    {
+        strcpy(buffer,"le block n'existe pas");
+    }
+    
+    
+
 }
 
 
@@ -43,14 +68,16 @@ void recherche(char c[],bool *trouv,int *i,int *j ,fichier f)
     //c est l'element rechercher
     //i le num de block ou devrait ce trouver c
     //j la position de c dans le block
-    int bi;//borne inferieur
+    int *bi;//borne inferieur
     int bs;//borne sup
     bool stop;
     stop=false;
     *trouv=false;
+    (*bi)=entete(f,1);
+
     while (!(*trouv) || !(stop))
     {
-        /* code */
+        
     }
     
 
