@@ -4,13 +4,13 @@
 #include<string.h>
 
 
-typedef struct 
+typedef struct block
 {
     char enregistrement[200];
     int nb_enr;
     bool suppresion[100];//pour savoir le numero des enregistrement supprimmer
     bool chevauchement;//si il y a un chevauchement dans le block
-    block *svt;
+    struct block* svt;
 }block;
 typedef struct 
 {
@@ -32,6 +32,7 @@ int entete(fichier F,int i)
         break;      
     
     default:
+        return -1;
         break;
     }
 }
@@ -47,6 +48,7 @@ block* Entete(fichier F, int i)
         return F.fin;
         break; 
     default:
+        return NULL;
         break;
     } 
 } 
@@ -58,16 +60,16 @@ bool enteteblock(fichier f,int i,int num)
     {
         x=x->svt;
     }
-    switch (i)
+    switch (num)
     {
     case 0:
         return x->chevauchement;
         break;
     case 1:
-        return x->suppresion;
+        return x->suppresion[0];
         break;
-    
     default:
+        return -1;
         break;
     }
 
@@ -78,10 +80,10 @@ int Enteteblock(block x,int i)
     {
         return x.nb_enr;
     }
-    return;
+    return 0;
     
 }
-void lireblock(fichier f,int i,char *buffer[200])
+void lireblock(fichier f,int i,char buffer[200])
 {
     int cpt=1;
     block *n_block=Entete(f,1);
@@ -133,18 +135,18 @@ void recherche(char c[],bool *trouv,int *i,int *j ,fichier f)
             strcpy(enregistremet,strtoken1);
             if (strcmp(strtoken2,c)==0)//la cle se trouve dans le premier champs
             {
-                trouv=true;
+                (*trouv)=true;
             }
             if (strcmp(strtoken2,c)>0)
             {
-                stop=true;
+                (stop)=true;
                 (*j)--;
             }
             
             (*j)++;
             strtoken1 = strtok ( NULL, "$" );//recuperer le prochain enregistrement 
             char buffer2[200];
-            bool chevauchement=enteteblock(f,i,0);
+            bool chevauchement=enteteblock(f,*i,0);//le cas ou il y a un chevauchement dans le block
             if (strtoken1==NULL && !trouv && chevauchement)
                 {
                     lireblock(f,*(i+1),buffer2);
@@ -153,7 +155,7 @@ void recherche(char c[],bool *trouv,int *i,int *j ,fichier f)
                     strtoken2=strtok(enregistremet, "#");
                     if (strcmp(strtoken2,c)==0)//la cle se trouve dans le premier champs
                     {
-                        trouv=true;
+                        (*trouv)=true;
                     }   
                     if (strcmp(strtoken2,c)>0)
                     {
@@ -164,12 +166,8 @@ void recherche(char c[],bool *trouv,int *i,int *j ,fichier f)
             }
             (*i)++;
     }
+}
+int main()
+{
     
-    
-        
-
-    
-
-
-
 }
