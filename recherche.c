@@ -17,7 +17,23 @@ typedef struct
     bool supp_logique;
     block* debut;
 }fichier;
-
+int entete(fichier F,int i)
+{
+    switch (i)
+    {
+    case 0:
+        return F.nb_block;
+        break;
+    case 1:
+        return F.debut;
+        break;
+    case 3:
+        return F.taille_block;
+        break;    
+    default:
+        break;
+    }
+}
 
 
 //en entrée la clé (c) à chercher et le fichier.
@@ -29,7 +45,15 @@ void recherche(char c[],bool *trouv,int *i,int *j ,fichier f)
     //j la position de c dans le block
     int bi;//borne inferieur
     int bs;//borne sup
-    bool trouv;
+    bool stop;
+    stop=false;
+    *trouv=false;
+    while (!(*trouv) || !(stop))
+    {
+        /* code */
+    }
+    
+
 
 
 }
