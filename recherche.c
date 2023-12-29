@@ -18,6 +18,7 @@ typedef struct
     int taille_block;
     bool supp_logique;
     block *debut;
+    block *fin;
 }fichier;
 int entete(fichier F,int i)
 {
@@ -37,7 +38,18 @@ int entete(fichier F,int i)
 
 block* Entete(fichier F, int i)
 {
-    return F.debut;
+    switch (i)
+    {
+    case 1:
+        return F.debut;
+        break;
+    case 3:
+        return F.fin;
+        break; 
+    default:
+        break;
+    }
+    
 } 
 void lireblock(fichier f,int i,char buffer[200])
 {
@@ -71,26 +83,32 @@ void recherche(char c[],bool *trouv,int *i,int *j ,fichier f)
     int *bi;//borne inferieur
     int bs;//borne sup
     bool stop;
+    int nb_block=entete(f,0);
     int sizeblock=entete(f,2);
     stop=false;
     *trouv=false;
     (*bi)=entete(f,1);
     char buffer[200];
-    char *strtokern1;
-    while (!(*trouv) || !(stop))
+    char *strtoken1;
+    char *strtoken2;
+    *j=0;
+    *i=1;
+    while (!(*trouv) && !(stop) && *i<=nb_block)
     {
-        lireblock(f,1,buffer);
-        strtokern1=strtok(buffer, "$");
-        while(!stop && j<sizeblock)
-        {
-            if (c)
+        lireblock(f,*i,buffer);
+        strtoken1=strtok(buffer, "$");//$ est le separateur d'enregistrement
+        while ( strtoken1 != NULL ) {
+            strtoken2=strtok(buffer, "#");//# est le separateur d'atribut
+            if (strcmp(strtoken2,c)==0)//la cle se trouve dans le premier champs
             {
-                /* code */
+                trouv=true;
             }
-            
+            strtoken1 = strtok ( NULL, "$" );//recuperer le prochain enregistrement
         }
-        
+        (*i)++;
     }
+        
+
     
 
 
