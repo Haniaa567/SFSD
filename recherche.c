@@ -117,11 +117,19 @@ bool* enteteblock(fichier f,int i,int num)
 
 }
 //une autre fonction car ce n'est pas le meme type de retour
-int Enteteblock(block x,int i)
+int Enteteblock(fichier f,int i,int num)
 {
-    if (i==3)
+    int cpt=1;
+    block *x=Entete(f,1);//l'adresse de debut
+    //chercher la bonne position de bloc
+    while (cpt!=i && (x)!=NULL)
     {
-        return x.nb_enr;
+        cpt++;
+        x=x->svt;
+    }
+    if (num==3)
+    {
+        return x->nb_enr;
     }
     return 0;
     
@@ -192,15 +200,27 @@ void ecrireblock(fichier f,int i,char buffer[])
             x->chevauchement=true;
         }
         //nombre d'enregistrement
-        if (occ!=0 && prd->chevauchement==false)
+        if (occ!=0 && prd->chevauchement==false && !(x->chevauchement))
         {
             x->nb_enr=occ+1;
         }
-        if (x->chevauchement && occ==0)
+        else if (occ!=0 && prd->chevauchement==false && (x->chevauchement))
+        {
+            x->nb_enr=occ+1;
+        }
+        else if (x->chevauchement && occ==0 && prd->chevauchement==true)
         {
             x->nb_enr=-1;
         }
-        if (occ!=0 && prd->chevauchement==true)
+        else if (x->chevauchement && occ==0 && prd->chevauchement==false)
+        {
+            x->nb_enr=0;
+        }
+        else if (occ!=0 && prd->chevauchement==true && !(x->chevauchement))
+        {
+            x->nb_enr=occ;
+        }
+        else if (occ!=0 && prd->chevauchement==true && (x->chevauchement))
         {
             x->nb_enr=occ;
         }
@@ -237,6 +257,7 @@ void recherche(char c[],bool *trouv,int *i,int *j ,fichier f)
     char *saveptr2=NULL;
     char tmp[100];
     int prd=*i;//dans le cas ou il y a un chevauchemant dans le block d'avant
+    int k;
     while (!(*trouv) && !(stop) && *i<=nb_block)
     {
         lireblock(f,*i,buffer);
@@ -266,6 +287,7 @@ void recherche(char c[],bool *trouv,int *i,int *j ,fichier f)
             (*j)++;
             strtoken1 = strtok_r(NULL, "$", &saveptr1); // recuperer le prochain enregistrement
             chevauchement=enteteblock(f,*i,0);//le cas ou il y a un chevauchement dans le block 
+            //le cas ou on a trouver la mauvaise cle a cause de chevauchement
             if ((*trouv)==true && strtoken1== NULL && *chevauchement==true && strtoken2==NULL)
             {
                 (*trouv)=false;
@@ -275,17 +297,25 @@ void recherche(char c[],bool *trouv,int *i,int *j ,fichier f)
         prd=*i;
         (*i)++;
 
-            
-        chevauchement=enteteblock(f,(*i)-1,0);//le cas ou il y a un chevauchement dans le block
+        k=(*i);   
+        chevauchement=enteteblock(f,k-1,0);//le cas ou il y a un chevauchement dans le block
         if (strtoken1==NULL && (*trouv)==false && *chevauchement==true)
-        {
-            lireblock(f,*(i),buffer2);
+        {    
+            lireblock(f,k,buffer2);
             strtoken1=strtok_r(buffer2, "$",&saveptr1);//$ est le separateur d'enregistrement
             strcat(enregistremet,buffer2);//trouver l'enregitrement qui a etait couper
+            while (Enteteblock(f,k,3)==-1)
+            {
+                k++;
+                lireblock(f,k,buffer2);
+                strtoken1=strtok_r(buffer2, "$",&saveptr1);//$ est le separateur d'enregistrement
+                strcat(enregistremet,buffer2);//trouver l'enregitrement qui a etait couper
+            }
             strtoken2=strtok_r(enregistremet, "#",&saveptr2);
             if (strcmp(strtoken2,c)==0)
             {
                 (*trouv)=true;
+                (*i)--;
             }
             
         }   
@@ -297,19 +327,19 @@ int main()
 {
     fichier f;
     f.nb_block=0;
-    f.taille_block=10;
+    f.taille_block=5;
     f.supp_logique=true;
     f.debut=NULL;
     f.fin=NULL;
     int i=allocblock(&f);
-    ecrireblock(f,i,"1#$2#$9202");
+    ecrireblock(f,i,"1#$26");
     i=allocblock(&f);
-    ecrireblock(f,i,"96#$3465#$");
+    ecrireblock(f,i,"96333");
     i=allocblock(&f);
-    ecrireblock(f,i,"45678902#$");
+    ecrireblock(f,i,"425#$");
     bool trouv=false;
     int j;
-    recherche("920296",&trouv,&i,&j,f);
+    recherche("2696333425",&trouv,&i,&j,f);
     if (trouv==true)
     {
         printf("la valeur ce trouve dans le block %d et l'enregistrement %d\n",i,j);
