@@ -191,6 +191,7 @@ void ecrireblock(fichier f,int i,char buffer[])
         x->ocup=f.taille_block;
         x->res=0;
         //initialiser les informations de block(chevauchement)
+        printf("%d=%docc\n",i,occ);
         if (x->enregistrement[f.taille_block-1]=='$')
         {
             x->chevauchement=false;
@@ -200,35 +201,54 @@ void ecrireblock(fichier f,int i,char buffer[])
             x->chevauchement=true;
         }
         //nombre d'enregistrement
-        if (occ!=0 && prd->chevauchement==false && !(x->chevauchement))
+        if (prd !=x)
+        {
+            if (occ!=0 && prd->chevauchement==false && !(x->chevauchement))
+            {
+                x->nb_enr=occ+1;
+            }
+            else if (occ!=0 && prd->chevauchement==false && (x->chevauchement))
+            {
+                x->nb_enr=occ+1;
+            }
+            else if (x->chevauchement && occ==0 && prd->chevauchement==true)
+            {
+                x->nb_enr=-1;
+                printf("?-1?\n");
+            }
+            else if (x->chevauchement && occ==0 && prd->chevauchement==false)
+            {
+                x->nb_enr=0;
+            }
+            else if (occ>1 && prd->chevauchement==true && !(x->chevauchement))
+            {
+                x->nb_enr=occ-1;
+            }
+            else if (occ>1 && prd->chevauchement==true && (x->chevauchement))
+            {
+                x->nb_enr=occ;
+            }
+            else if (occ==1 && prd->chevauchement==true && (x->chevauchement))
+            {
+                x->nb_enr=-1;
+            }
+            else if (occ==1 && prd->chevauchement==true && !(x->chevauchement))
+            {
+                x->nb_enr=-1;
+            }
+        }
+        else
         {
             x->nb_enr=occ+1;
         }
-        else if (occ!=0 && prd->chevauchement==false && (x->chevauchement))
-        {
-            x->nb_enr=occ+1;
-        }
-        else if (x->chevauchement && occ==0 && prd->chevauchement==true)
-        {
-            x->nb_enr=-1;
-        }
-        else if (x->chevauchement && occ==0 && prd->chevauchement==false)
-        {
-            x->nb_enr=0;
-        }
-        else if (occ!=0 && prd->chevauchement==true && !(x->chevauchement))
-        {
-            x->nb_enr=occ;
-        }
-        else if (occ!=0 && prd->chevauchement==true && (x->chevauchement))
-        {
-            x->nb_enr=occ;
-        }
+        
+        
         //suppression
         for (int i = 0; i < x->nb_enr; i++)
         {
             x->suppresion[i]=0;
         }
+        printf("%d=%dnb\n",i,x->nb_enr);
         
     }
 }
@@ -260,13 +280,13 @@ void recherche(char c[],bool *trouv,int *i,int *j ,fichier f)
     int k;
     while (!(*trouv) && !(stop) && *i<=nb_block)
     {
-        lireblock(f,*i,buffer);
-        
+        lireblock(f,*i,buffer);   
         strtoken1=strtok_r(buffer, "$", &saveptr1);//$ est le separateur d'enregistrement
         *j=0;//la position de l'enregistrement
         prd_ch=enteteblock(f,prd,0);
-        if (*prd_ch==true || prd==1)
+        if ((*prd_ch==true && prd!=*i))
         {
+            printf("!!!%d=i,%d=j\n",*i,*j);
             strtoken1 = strtok_r(NULL, "$", &saveptr1); // recuperer le prochain enregistrement  
         }
         while ( strtoken1 != NULL && !(*trouv) && !stop) {
@@ -292,11 +312,12 @@ void recherche(char c[],bool *trouv,int *i,int *j ,fichier f)
             {
                 (*trouv)=false;
             }
-                       
+
         }
         prd=*i;
         (*i)++;
-
+        int x;
+        x=prd;
         k=(*i);   
         chevauchement=enteteblock(f,k-1,0);//le cas ou il y a un chevauchement dans le block
         if (strtoken1==NULL && (*trouv)==false && *chevauchement==true)
@@ -304,7 +325,7 @@ void recherche(char c[],bool *trouv,int *i,int *j ,fichier f)
             lireblock(f,k,buffer2);
             strtoken1=strtok_r(buffer2, "$",&saveptr1);//$ est le separateur d'enregistrement
             strcat(enregistremet,buffer2);//trouver l'enregitrement qui a etait couper
-            while (Enteteblock(f,k,3)==-1)
+            while (k<nb_block && Enteteblock(f,k,3)==-1)
             {
                 k++;
                 lireblock(f,k,buffer2);
@@ -315,7 +336,7 @@ void recherche(char c[],bool *trouv,int *i,int *j ,fichier f)
             if (strcmp(strtoken2,c)==0)
             {
                 (*trouv)=true;
-                (*i)--;
+                *i=x+1;
             }
             
         }   
@@ -327,19 +348,19 @@ int main()
 {
     fichier f;
     f.nb_block=0;
-    f.taille_block=5;
+    f.taille_block=10;//sans le caractere de fin de chaine
     f.supp_logique=true;
     f.debut=NULL;
     f.fin=NULL;
     int i=allocblock(&f);
-    ecrireblock(f,i,"1#$26");
+    ecrireblock(f,i,"12#$24#$56\0");
     i=allocblock(&f);
-    ecrireblock(f,i,"96333");
+    ecrireblock(f,i,"963#$737#$\0");
     i=allocblock(&f);
-    ecrireblock(f,i,"425#$");
+    ecrireblock(f,i,"825#$984#$\0");
     bool trouv=false;
     int j;
-    recherche("2696333425",&trouv,&i,&j,f);
+    recherche("984\0",&trouv,&i,&j,f);
     if (trouv==true)
     {
         printf("la valeur ce trouve dans le block %d et l'enregistrement %d\n",i,j);
