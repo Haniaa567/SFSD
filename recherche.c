@@ -2,6 +2,8 @@
 #include<stdlib.h>
 #include<stdbool.h>
 #include<string.h>
+#include <gtk/gtk.h>
+
 
 
 typedef struct block
@@ -344,6 +346,82 @@ void recherche(char c[],bool *trouv,int *i,int *j ,fichier f)
     }
     (*i)--;//repositioner le numero de block
 }
+// La fonction expose_callback est appelée chaque fois que la zone de dessin (canvas) a besoin d'être redessinée.
+// Elle utilise GTK et Cairo pour dessiner les blocs du fichier.
+
+gboolean affichage(GtkWidget* widget, GdkEventExpose* event, gpointer data) {
+    // Récupération du contexte Cairo à partir du widget
+    //le contexte Cairo est essentiel pour effectuer des opérations de dessin
+    cairo_t* cr;
+    GdkDrawingContext* context;
+    context = gtk_widget_get_draw_context(widget);
+    cr = gdk_drawing_context_get_cairo_context(context);
+
+    // Conversion du pointeur générique en pointeur vers le fichier
+    fichier* f = (fichier*)data;
+
+    // Initialisation des coordonnées et dimensions des blocs
+    int x = 20;
+    int y = 50;
+    int blockWidth = 120;
+    int blockHeight = 80;
+
+    // Affichage de l'en-tête du fichier en bas de la fenêtre
+    cairo_set_source_rgb(cr, 0, 0, 0);
+    cairo_move_to(cr, x, y + blockHeight * 2);
+    cairo_show_text(cr, "En-tête du fichier:");
+    cairo_move_to(cr, x, y + blockHeight * 3);
+    cairo_show_text(cr, g_strdup_printf("Nombre de blocs: %d", f->nb_block));
+    cairo_move_to(cr, x, y + blockHeight * 4);
+    cairo_show_text(cr, g_strdup_printf("Taille des blocs: %d", f->taille_block));
+
+    // Parcours des blocs dans le fichier
+    block* current = f->debut;
+    int k=1;
+    char enregistrement[500];
+    char *strtoken1;
+    char *strtoken2;
+    while (current != NULL) {
+        // Dessin du carré représentant le bloc
+        cairo_rectangle(cr, x, y, blockWidth, blockHeight);
+        cairo_stroke_preserve(cr);
+        cairo_set_source_rgb(cr, 0.8, 0.8, 0.8);
+        cairo_fill(cr);
+
+        // Affichage de l'en-tête du bloc au-dessus du bloc
+        cairo_set_source_rgb(cr, 0, 0, 0);
+        cairo_move_to(cr, x + 10, y - 10);
+        cairo_show_text(cr, g_strdup_printf("Bloc %d", x / (blockWidth + 20) + 1));
+
+        // Dessin du texte à l'intérieur du carré
+        cairo_set_source_rgb(cr, 0, 0, 0);
+        cairo_move_to(cr, x + 10, y + 30);
+        strcpy(enregistrement,current->enregistrement);
+
+
+
+        cairo_show_text(cr, current->enregistrement);
+
+        // Dessin d'une flèche vers le prochain élément s'il existe
+        if (current->svt != NULL) {
+            cairo_move_to(cr, x + blockWidth, y + blockHeight / 2);
+            cairo_line_to(cr, x + blockWidth + 20, y + blockHeight / 2);
+            cairo_line_to(cr, x + blockWidth + 15, y + blockHeight / 2 - 5);
+            cairo_move_to(cr, x + blockWidth + 20, y + blockHeight / 2);
+            cairo_line_to(cr, x + blockWidth + 15, y + blockHeight / 2 + 5);
+            cairo_stroke(cr);
+        }
+
+        // Mise à jour des coordonnées pour le prochain bloc
+        x += blockWidth + 20;
+        current = current->svt;
+        k++;
+    }
+
+    // Indique que le traitement de l'événement d'exposition est terminé
+    return FALSE;
+}
+
 int main()
 {
     fichier f;
