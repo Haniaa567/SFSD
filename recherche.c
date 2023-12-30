@@ -66,11 +66,12 @@ int allocblock(fichier *f)
         exit(EXIT_FAILURE);
     }
     (bloc)->nb_enr=0;//normalemet on utilise la fonction affecter en tete block
-    bloc->chevauchement=false;
+    bloc->chevauchement=false;//le bloc sera vide donc les information auront des valeurs par defaut
     bloc->svt=NULL;
     bloc->res=f->taille_block;
     bloc->ocup=0;
     int cpt=1;
+    //chercher la bonne position de bloc
     if (f->nb_block!=0)
     {
         block *x=Entete(*f,1);//l'adresse de debut
@@ -90,11 +91,12 @@ int allocblock(fichier *f)
     f->nb_block++;
     return cpt;
 }
-
+//j'ai mis le retour un ppointeur pou pouvoir retourner un tableau(suppression)
 bool* enteteblock(fichier f,int i,int num)
 {
     int cpt=1;
     block *x=Entete(f,1);//l'adresse de debut
+    //chercher la bonne position de bloc
     while (cpt!=i && (x)!=NULL)
     {
         cpt++;
@@ -114,7 +116,7 @@ bool* enteteblock(fichier f,int i,int num)
     }
 
 }
-
+//une autre fonction car ce n'est pas le meme type de retour
 int Enteteblock(block x,int i)
 {
     if (i==3)
@@ -143,11 +145,13 @@ void lireblock(fichier f,int i,char buffer[200])
 {
     int cpt=1;
     block *n_block=Entete(f,1);
+    //trouver la bonne position
     while (cpt!=i && (n_block)!=NULL)
     {
         cpt++;
         n_block=n_block->svt;
     }
+    //copier le contenu de block dans de buffer
     if ((n_block)!=NULL)
     {
         strcpy(buffer,(n_block)->enregistrement);
@@ -157,9 +161,6 @@ void lireblock(fichier f,int i,char buffer[200])
         strcpy(buffer,"le block n'existe pas");
         return;
     }
-    
-    
-
 }
 
 void ecrireblock(fichier f,int i,char buffer[])
@@ -169,6 +170,7 @@ void ecrireblock(fichier f,int i,char buffer[])
     int occ=compterOccurrences(buffer,'$');
     block *x=Entete(f,1);//l'adresse de debut
     block *prd=x;
+    //trouver le bon block
     while (cpt!=i && (x)!=NULL)
     {
         cpt++;
@@ -180,6 +182,7 @@ void ecrireblock(fichier f,int i,char buffer[])
         strcpy(x->enregistrement,buffer);
         x->ocup=f.taille_block;
         x->res=0;
+        //initialiser les informations de block(chevauchement)
         if (x->enregistrement[f.taille_block-1]=='$')
         {
             x->chevauchement=false;
@@ -188,6 +191,7 @@ void ecrireblock(fichier f,int i,char buffer[])
         {
             x->chevauchement=true;
         }
+        //nombre d'enregistrement
         if (occ!=0 && prd->chevauchement==false)
         {
             x->nb_enr=occ+1;
@@ -200,6 +204,7 @@ void ecrireblock(fichier f,int i,char buffer[])
         {
             x->nb_enr=occ;
         }
+        //suppression
         for (int i = 0; i < x->nb_enr; i++)
         {
             x->suppresion[i]=0;
@@ -244,7 +249,7 @@ void recherche(char c[],bool *trouv,int *i,int *j ,fichier f)
             strtoken1 = strtok_r(NULL, "$", &saveptr1); // recuperer le prochain enregistrement  
         }
         while ( strtoken1 != NULL && !(*trouv) && !stop) {
-            strcpy(tmp,strtoken1);
+            strcpy(tmp,strtoken1);//pour modifier tmp afin de trouver les attribut
             strcpy(enregistremet,strtoken1);//pour conserver le dernier enregistrement en cas ou il y a un chevauchement
             strtoken2=strtok_r(tmp, "#", &saveptr2);//# est le separateur d'atribut
             if (strcmp(strtoken2,c)==0 )//la cle se trouve dans le premier champs
@@ -276,7 +281,7 @@ void recherche(char c[],bool *trouv,int *i,int *j ,fichier f)
         {
             lireblock(f,*(i),buffer2);
             strtoken1=strtok_r(buffer2, "$",&saveptr1);//$ est le separateur d'enregistrement
-            strcat(enregistremet,buffer2);
+            strcat(enregistremet,buffer2);//trouver l'enregitrement qui a etait couper
             strtoken2=strtok_r(enregistremet, "#",&saveptr2);
             if (strcmp(strtoken2,c)==0)
             {
