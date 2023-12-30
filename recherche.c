@@ -164,6 +164,7 @@ void lireblock(fichier f,int i,char buffer[200])
 
 void ecrireblock(fichier f,int i,char buffer[])
 {
+    //on ne peut pas ecraser un block cette fonction ne marche pas dans ce cas
     int cpt=1;
     int occ=compterOccurrences(buffer,'$');
     block *x=Entete(f,1);//l'adresse de debut
@@ -179,7 +180,7 @@ void ecrireblock(fichier f,int i,char buffer[])
         strcpy(x->enregistrement,buffer);
         x->ocup=f.taille_block;
         x->res=0;
-        if (x->enregistrement[f.taille_block]=='$')
+        if (x->enregistrement[f.taille_block-1]=='$')
         {
             x->chevauchement=false;
         }
@@ -224,53 +225,64 @@ void recherche(char c[],bool *trouv,int *i,int *j ,fichier f)
     char *strtoken1;
     char *strtoken2;
     char enregistremet[200];
-    bool *chevauchement;
+    bool *chevauchement,*prd_ch;
     *j=0;
     *i=1;
     char *saveptr1=NULL;
     char *saveptr2=NULL;
     char tmp[100];
+    int prd=*i;//dans le cas ou il y a un chevauchemant dans le block d'avant
     while (!(*trouv) && !(stop) && *i<=nb_block)
     {
         lireblock(f,*i,buffer);
         
         strtoken1=strtok_r(buffer, "$", &saveptr1);//$ est le separateur d'enregistrement
         *j=0;//la position de l'enregistrement
+        prd_ch=enteteblock(f,prd,0);
+        if (*prd_ch==true || prd==1)
+        {
+            strtoken1 = strtok_r(NULL, "$", &saveptr1); // recuperer le prochain enregistrement  
+        }
         while ( strtoken1 != NULL && !(*trouv) && !stop) {
-            
             strcpy(tmp,strtoken1);
+            strcpy(enregistremet,strtoken1);//pour conserver le dernier enregistrement en cas ou il y a un chevauchement
             strtoken2=strtok_r(tmp, "#", &saveptr2);//# est le separateur d'atribut
-            strcpy(enregistremet,strtoken2);//pour conserver le dernier enregistrement en cas ou il y a un chevauchement
             if (strcmp(strtoken2,c)==0 )//la cle se trouve dans le premier champs
             {
                 (*trouv)=true;
             }
-            if (strcmp(strtoken2,c)>0)
+            else if (strcmp(strtoken2,c)>0)
             {
                 (stop)=true;
                 (*j)--;
             }
-            
+            strtoken2 = strtok_r(NULL, "#", &saveptr2); // recuperer le prochain attribut
+                
             (*j)++;
-            strtoken1 = strtok_r(NULL, "$", &saveptr1); // recuperer le prochain enregistrement            
+            strtoken1 = strtok_r(NULL, "$", &saveptr1); // recuperer le prochain enregistrement
+            chevauchement=enteteblock(f,*i,0);//le cas ou il y a un chevauchement dans le block 
+            if ((*trouv)==true && strtoken1== NULL && *chevauchement==true && strtoken2==NULL)
+            {
+                (*trouv)=false;
+            }
+                       
         }
+        prd=*i;
         (*i)++;
+
             
-        chevauchement=enteteblock(f,*i,0);//le cas ou il y a un chevauchement dans le block
-        if (strtoken1==NULL && !trouv && *chevauchement==true)
+        chevauchement=enteteblock(f,(*i)-1,0);//le cas ou il y a un chevauchement dans le block
+        if (strtoken1==NULL && (*trouv)==false && *chevauchement==true)
         {
             lireblock(f,*(i),buffer2);
             strtoken1=strtok_r(buffer2, "$",&saveptr1);//$ est le separateur d'enregistrement
             strcat(enregistremet,buffer2);
             strtoken2=strtok_r(enregistremet, "#",&saveptr2);
-            if (strcmp(strtoken2,c)==0)//la cle se trouve dans le premier champs
+            if (strcmp(strtoken2,c)==0)
             {
                 (*trouv)=true;
-            }   
-            if (strcmp(strtoken2,c)>0)
-            {
-                stop=true;
-            } 
+            }
+            
         }   
             
     }
@@ -280,33 +292,26 @@ int main()
 {
     fichier f;
     f.nb_block=0;
-    f.taille_block=11;
+    f.taille_block=10;
     f.supp_logique=true;
     f.debut=NULL;
     f.fin=NULL;
-    printf("test1\n");
     int i=allocblock(&f);
-    printf("test2\n");
-    ecrireblock(f,i,"1#$2#$23#$");
-    printf("test3\n");
+    ecrireblock(f,i,"1#$2#$9202");
     i=allocblock(&f);
-    printf("test3,5\n");
-    ecrireblock(f,i,"26#$3465#$");
+    ecrireblock(f,i,"96#$3465#$");
     i=allocblock(&f);
-    printf("test4\n");
     ecrireblock(f,i,"45678902#$");
     bool trouv=false;
     int j;
-    printf("test5\n");
-    recherche("5",&trouv,&i,&j,f);
-    printf("test6\n");
+    recherche("920296",&trouv,&i,&j,f);
     if (trouv==true)
     {
         printf("la valeur ce trouve dans le block %d et l'enregistrement %d\n",i,j);
     }
     else
     {
-        printf("la valeur ne se trouve pas dans le fichier");
+        printf("la valeur ne se trouve pas dans le fichier le numero de block avant la valeur est %d et la position est %d",i,j);
     }
     
 }
