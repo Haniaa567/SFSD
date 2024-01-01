@@ -2,6 +2,8 @@
 #include<stdlib.h>
 #include<stdbool.h>
 #include<string.h>
+#include <gtk/gtk.h>
+
 
 
 typedef struct block
@@ -117,11 +119,19 @@ bool* enteteblock(fichier f,int i,int num)
 
 }
 //une autre fonction car ce n'est pas le meme type de retour
-int Enteteblock(block x,int i)
+int Enteteblock(fichier f,int i,int num)
 {
-    if (i==3)
+    int cpt=1;
+    block *x=Entete(f,1);//l'adresse de debut
+    //chercher la bonne position de bloc
+    while (cpt!=i && (x)!=NULL)
     {
-        return x.nb_enr;
+        cpt++;
+        x=x->svt;
+    }
+    if (num==3)
+    {
+        return x->nb_enr;
     }
     return 0;
     
@@ -183,6 +193,7 @@ void ecrireblock(fichier f,int i,char buffer[])
         x->ocup=f.taille_block;
         x->res=0;
         //initialiser les informations de block(chevauchement)
+        printf("%d=%docc\n",i,occ);
         if (x->enregistrement[f.taille_block-1]=='$')
         {
             x->chevauchement=false;
@@ -192,23 +203,54 @@ void ecrireblock(fichier f,int i,char buffer[])
             x->chevauchement=true;
         }
         //nombre d'enregistrement
-        if (occ!=0 && prd->chevauchement==false)
+        if (prd !=x)
+        {
+            if (occ!=0 && prd->chevauchement==false && !(x->chevauchement))
+            {
+                x->nb_enr=occ+1;
+            }
+            else if (occ!=0 && prd->chevauchement==false && (x->chevauchement))
+            {
+                x->nb_enr=occ+1;
+            }
+            else if (x->chevauchement && occ==0 && prd->chevauchement==true)
+            {
+                x->nb_enr=-1;
+                printf("?-1?\n");
+            }
+            else if (x->chevauchement && occ==0 && prd->chevauchement==false)
+            {
+                x->nb_enr=0;
+            }
+            else if (occ>1 && prd->chevauchement==true && !(x->chevauchement))
+            {
+                x->nb_enr=occ-1;
+            }
+            else if (occ>1 && prd->chevauchement==true && (x->chevauchement))
+            {
+                x->nb_enr=occ;
+            }
+            else if (occ==1 && prd->chevauchement==true && (x->chevauchement))
+            {
+                x->nb_enr=-1;
+            }
+            else if (occ==1 && prd->chevauchement==true && !(x->chevauchement))
+            {
+                x->nb_enr=-1;
+            }
+        }
+        else
         {
             x->nb_enr=occ+1;
         }
-        if (x->chevauchement && occ==0)
-        {
-            x->nb_enr=-1;
-        }
-        if (occ!=0 && prd->chevauchement==true)
-        {
-            x->nb_enr=occ;
-        }
+        
+        
         //suppression
         for (int i = 0; i < x->nb_enr; i++)
         {
             x->suppresion[i]=0;
         }
+        printf("%d=%dnb\n",i,x->nb_enr);
         
     }
 }
@@ -237,15 +279,16 @@ void recherche(char c[],bool *trouv,int *i,int *j ,fichier f)
     char *saveptr2=NULL;
     char tmp[100];
     int prd=*i;//dans le cas ou il y a un chevauchemant dans le block d'avant
+    int k;
     while (!(*trouv) && !(stop) && *i<=nb_block)
     {
-        lireblock(f,*i,buffer);
-        
+        lireblock(f,*i,buffer);   
         strtoken1=strtok_r(buffer, "$", &saveptr1);//$ est le separateur d'enregistrement
         *j=0;//la position de l'enregistrement
         prd_ch=enteteblock(f,prd,0);
-        if (*prd_ch==true || prd==1)
+        if ((*prd_ch==true && prd!=*i))
         {
+            printf("!!!%d=i,%d=j\n",*i,*j);
             strtoken1 = strtok_r(NULL, "$", &saveptr1); // recuperer le prochain enregistrement  
         }
         while ( strtoken1 != NULL && !(*trouv) && !stop) {
@@ -266,26 +309,36 @@ void recherche(char c[],bool *trouv,int *i,int *j ,fichier f)
             (*j)++;
             strtoken1 = strtok_r(NULL, "$", &saveptr1); // recuperer le prochain enregistrement
             chevauchement=enteteblock(f,*i,0);//le cas ou il y a un chevauchement dans le block 
+            //le cas ou on a trouver la mauvaise cle a cause de chevauchement
             if ((*trouv)==true && strtoken1== NULL && *chevauchement==true && strtoken2==NULL)
             {
                 (*trouv)=false;
             }
-                       
+
         }
         prd=*i;
         (*i)++;
-
-            
-        chevauchement=enteteblock(f,(*i)-1,0);//le cas ou il y a un chevauchement dans le block
+        int x;
+        x=prd;
+        k=(*i);   
+        chevauchement=enteteblock(f,k-1,0);//le cas ou il y a un chevauchement dans le block
         if (strtoken1==NULL && (*trouv)==false && *chevauchement==true)
-        {
-            lireblock(f,*(i),buffer2);
+        {    
+            lireblock(f,k,buffer2);
             strtoken1=strtok_r(buffer2, "$",&saveptr1);//$ est le separateur d'enregistrement
             strcat(enregistremet,buffer2);//trouver l'enregitrement qui a etait couper
+            while (k<nb_block && Enteteblock(f,k,3)==-1)
+            {
+                k++;
+                lireblock(f,k,buffer2);
+                strtoken1=strtok_r(buffer2, "$",&saveptr1);//$ est le separateur d'enregistrement
+                strcat(enregistremet,buffer2);//trouver l'enregitrement qui a etait couper
+            }
             strtoken2=strtok_r(enregistremet, "#",&saveptr2);
             if (strcmp(strtoken2,c)==0)
             {
                 (*trouv)=true;
+                *i=x+1;
             }
             
         }   
@@ -293,23 +346,99 @@ void recherche(char c[],bool *trouv,int *i,int *j ,fichier f)
     }
     (*i)--;//repositioner le numero de block
 }
+// La fonction expose_callback est appelée chaque fois que la zone de dessin (canvas) a besoin d'être redessinée.
+// Elle utilise GTK et Cairo pour dessiner les blocs du fichier.
+
+gboolean affichage(GtkWidget* widget, GdkEventExpose* event, gpointer data) {
+    // Récupération du contexte Cairo à partir du widget
+    //le contexte Cairo est essentiel pour effectuer des opérations de dessin
+    cairo_t* cr;
+    GdkDrawingContext* context;
+    context = gtk_widget_get_draw_context(widget);
+    cr = gdk_drawing_context_get_cairo_context(context);
+
+    // Conversion du pointeur générique en pointeur vers le fichier
+    fichier* f = (fichier*)data;
+
+    // Initialisation des coordonnées et dimensions des blocs
+    int x = 20;
+    int y = 50;
+    int blockWidth = 120;
+    int blockHeight = 80;
+
+    // Affichage de l'en-tête du fichier en bas de la fenêtre
+    cairo_set_source_rgb(cr, 0, 0, 0);
+    cairo_move_to(cr, x, y + blockHeight * 2);
+    cairo_show_text(cr, "En-tête du fichier:");
+    cairo_move_to(cr, x, y + blockHeight * 3);
+    cairo_show_text(cr, g_strdup_printf("Nombre de blocs: %d", f->nb_block));
+    cairo_move_to(cr, x, y + blockHeight * 4);
+    cairo_show_text(cr, g_strdup_printf("Taille des blocs: %d", f->taille_block));
+
+    // Parcours des blocs dans le fichier
+    block* current = f->debut;
+    int k=1;
+    char enregistrement[500];
+    char *strtoken1;
+    char *strtoken2;
+    while (current != NULL) {
+        // Dessin du carré représentant le bloc
+        cairo_rectangle(cr, x, y, blockWidth, blockHeight);
+        cairo_stroke_preserve(cr);
+        cairo_set_source_rgb(cr, 0.8, 0.8, 0.8);
+        cairo_fill(cr);
+
+        // Affichage de l'en-tête du bloc au-dessus du bloc
+        cairo_set_source_rgb(cr, 0, 0, 0);
+        cairo_move_to(cr, x + 10, y - 10);
+        cairo_show_text(cr, g_strdup_printf("Bloc %d", x / (blockWidth + 20) + 1));
+
+        // Dessin du texte à l'intérieur du carré
+        cairo_set_source_rgb(cr, 0, 0, 0);
+        cairo_move_to(cr, x + 10, y + 30);
+        strcpy(enregistrement,current->enregistrement);
+
+
+
+        cairo_show_text(cr, current->enregistrement);
+
+        // Dessin d'une flèche vers le prochain élément s'il existe
+        if (current->svt != NULL) {
+            cairo_move_to(cr, x + blockWidth, y + blockHeight / 2);
+            cairo_line_to(cr, x + blockWidth + 20, y + blockHeight / 2);
+            cairo_line_to(cr, x + blockWidth + 15, y + blockHeight / 2 - 5);
+            cairo_move_to(cr, x + blockWidth + 20, y + blockHeight / 2);
+            cairo_line_to(cr, x + blockWidth + 15, y + blockHeight / 2 + 5);
+            cairo_stroke(cr);
+        }
+
+        // Mise à jour des coordonnées pour le prochain bloc
+        x += blockWidth + 20;
+        current = current->svt;
+        k++;
+    }
+
+    // Indique que le traitement de l'événement d'exposition est terminé
+    return FALSE;
+}
+
 int main()
 {
     fichier f;
     f.nb_block=0;
-    f.taille_block=10;
+    f.taille_block=10;//sans le caractere de fin de chaine
     f.supp_logique=true;
     f.debut=NULL;
     f.fin=NULL;
     int i=allocblock(&f);
-    ecrireblock(f,i,"1#$2#$9202");
+    ecrireblock(f,i,"12#$24#$56\0");
     i=allocblock(&f);
-    ecrireblock(f,i,"96#$3465#$");
+    ecrireblock(f,i,"963#$737#$\0");
     i=allocblock(&f);
-    ecrireblock(f,i,"45678902#$");
+    ecrireblock(f,i,"825#$984#$\0");
     bool trouv=false;
     int j;
-    recherche("920296",&trouv,&i,&j,f);
+    recherche("984\0",&trouv,&i,&j,f);
     if (trouv==true)
     {
         printf("la valeur ce trouve dans le block %d et l'enregistrement %d\n",i,j);

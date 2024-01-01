@@ -1,0 +1,2 @@
+
+    int i=allocblock(&f);
