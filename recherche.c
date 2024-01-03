@@ -924,29 +924,130 @@ static gboolean draw_file(GtkWidget *widget, cairo_t *cr, gpointer data) {
 
 int main(int argc, char* argv[])
 {
-    fichier f;
+    gtk_init(&argc, &argv);
+
+    window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
+    gtk_window_set_title(GTK_WINDOW(window), "File Visualization");
+    gtk_window_set_default_size(GTK_WINDOW(window), 1500, 1000);
+    g_signal_connect(window, "destroy", G_CALLBACK(gtk_main_quit), NULL);
+
+
+    GtkWidget *vbox = gtk_box_new(GTK_ORIENTATION_VERTICAL, 5);
+    gtk_container_add(GTK_CONTAINER(window), vbox);
+
+    drawing_area = gtk_drawing_area_new();
+    gtk_widget_set_size_request(drawing_area, 1500, 1000);
+    GtkWidget *scrolled_window = gtk_scrolled_window_new(NULL, NULL);
+    gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(scrolled_window),
+                                GTK_POLICY_AUTOMATIC, GTK_POLICY_AUTOMATIC);
+    gtk_container_add(GTK_CONTAINER(scrolled_window), drawing_area);
+    gtk_box_pack_start(GTK_BOX(vbox), scrolled_window, TRUE, TRUE, 0);
+
+    g_signal_connect(drawing_area, "draw", G_CALLBACK(draw_file), NULL);
+    g_signal_connect(drawing_area, "size-allocate", G_CALLBACK(on_size_allocate), NULL);
+    GtkAdjustment *vadjustment;
+    vadjustment = gtk_scrolled_window_get_vadjustment(GTK_SCROLLED_WINDOW(scrolled_window));
+    g_signal_connect(vadjustment, "value-changed", G_CALLBACK(on_scrolled), NULL);
+    g_signal_connect(window, "focus-in-event", G_CALLBACK(on_focus_in_event), NULL);
+    g_signal_connect(window, "focus-out-event", G_CALLBACK(on_focus_out_event), NULL);
+
+
+    GtkWidget *insert_button = gtk_button_new_with_label("Inserer");
+    GtkWidget *delete_button = gtk_button_new_with_label("Supprimer");
+    GtkWidget *search_button = gtk_button_new_with_label("Rechercher");
+    GtkWidget *refresh_button = gtk_button_new_with_label("Refresh");
+
+    g_signal_connect(insert_button, "clicked", G_CALLBACK(on_insert_button_clicked), NULL);
+    g_signal_connect(delete_button, "clicked", G_CALLBACK(on_delete_button_clicked), NULL);
+    g_signal_connect(search_button, "clicked", G_CALLBACK(on_search_button_clicked), NULL);
+    g_signal_connect(refresh_button, "clicked", G_CALLBACK(on_refresh_button_clicked), NULL);
+
+    GtkWidget *hbox = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 5);
+    gtk_box_pack_start(GTK_BOX(hbox), insert_button, TRUE, TRUE, 0);
+    gtk_box_pack_start(GTK_BOX(hbox), delete_button, TRUE, TRUE, 0);
+    gtk_box_pack_start(GTK_BOX(hbox), search_button, TRUE, TRUE, 0);
+    gtk_box_pack_start(GTK_BOX(hbox), refresh_button, TRUE, TRUE, 0);
+
+    gtk_box_pack_start(GTK_BOX(vbox), hbox, FALSE, FALSE, 0);
+    
     f.nb_block=0;
-    f.taille_block=10;//sans le caractere de fin de chaine
+    f.taille_block=10;
     f.supp_logique=true;
     f.debut=NULL;
     f.fin=NULL;
     bool *test;
+    block *debut=f.debut;
     int i=allocblock(&f);
     ecrireblock(f,i,"12#$24#$56\0");
-    i=allocblock(&f);
-    ecrireblock(f,i,"963#$737#$\0");
-    i=allocblock(&f);
-    ecrireblock(f,i,"825#$984#$\0");
-    bool trouv=false;
-    int j;
-    recherche("24\0",&trouv,&i,&j,f);
-    if (trouv==true)
+    test=enteteblock(f,i,0);
+    if (*test==true)
     {
-        printf("la valeur ce trouve dans le block %d et l'enregistrement %d\n",i,j);
+        printf("oui\n");
     }
     else
     {
-        printf("la valeur ne se trouve pas dans le fichier le numero de block avant la valeur est %d et la position est %d",i,j);
+        printf("non\n");
     }
     
+    i=allocblock(&f);
+    ecrireblock(f,i,"963#$737#$\0");
+    test=enteteblock(f,i,0);
+    if (*test==true)
+    {
+        printf("oui\n");
+    }
+    else
+    {
+        printf("non\n");
+    }
+    i=allocblock(&f);
+    ecrireblock(f,i,"825#$984#$\0");
+    test=enteteblock(f,i,0);
+    if (*test==true)
+    {
+        printf("oui\n");
+    }
+    else
+    {
+        printf("non\n");
+    }
+
+    /*i=allocblock(&f);
+    ecrireblock(f,i,"12#123#$24#$56");
+    i=allocblock(&f);
+    ecrireblock(f,i,"963#$737#$");
+    i=allocblock(&f);
+    ecrireblock(f,i,"825#$984#$");
+    i=allocblock(&f);
+    ecrireblock(f,i,"12#123#$24#$56");
+    i=allocblock(&f);
+    ecrireblock(f,i,"963#$737#$");
+    i=allocblock(&f);
+    ecrireblock(f,i,"825#$984#$");
+    i=allocblock(&f);
+    ecrireblock(f,i,"12#123#$24#$56");
+    i=allocblock(&f);
+    ecrireblock(f,i,"963#$737#$");
+    i=allocblock(&f);
+    ecrireblock(f,i,"825#$984#$");
+    i=allocblock(&f);
+    ecrireblock(f,i,"12#123#$24#$56");
+    i=allocblock(&f);
+    ecrireblock(f,i,"963#$737#$");
+    i=allocblock(&f);
+    ecrireblock(f,i,"825#$984#$");
+    i=allocblock(&f);
+    ecrireblock(f,i,"12#123#$24#$56");
+    i=allocblock(&f);
+    ecrireblock(f,i,"963#$737#$");
+    i=allocblock(&f);
+    ecrireblock(f,i,"825#$984#$");
+    */
+    
+    update_gui();
+
+    gtk_widget_show_all(window);
+    gtk_main();
+
+    return 0;
 }
