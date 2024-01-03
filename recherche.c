@@ -837,6 +837,91 @@ static double calculate_required_height(int num_blocks) {
     return rows * (block_height + CELL_SPACING + 50) + STARTY;
 }
 
+static gboolean draw_file(GtkWidget *widget, cairo_t *cr, gpointer data) {
+
+    double x_f = STARTX, y_f = 20.0;
+    cairo_rectangle(cr, x_f, y_f, block_width, block_height);
+    cairo_set_source_rgb(cr, 0.8, 0.8, 0.8);
+    cairo_fill_preserve(cr);
+    cairo_set_source_rgb(cr, 0.0, 0.0, 0.0);
+    cairo_stroke(cr);
+
+    cairo_move_to(cr, x_f + 10.0, y_f + 20.0);
+    cairo_show_text(cr, "Fichier Headers :");
+    cairo_move_to(cr, x_f + 10.0, y_f + 60.0);
+    char tmp[30];
+    sprintf(tmp, "Nombre blocks : %i", *(int *)entete(f, 0));
+    cairo_show_text(cr, tmp);
+    cairo_move_to(cr, x_f + 10.0, y_f + 80.0);
+    sprintf(tmp, "Taille block : %i", *(int *)entete(f, 2));
+    cairo_show_text(cr, tmp);
+
+    if (f.debut != NULL) {
+        double arrowStartX = x_f + block_width / 2.0;
+        double arrowStartY = y_f + block_height;
+        double arrowEndX = arrowStartX;
+        double arrowEndY = STARTY;
+
+        cairo_move_to(cr, arrowStartX, arrowStartY);
+        cairo_line_to(cr, arrowEndX, arrowEndY);
+        cairo_stroke(cr);
+
+        double arrowTipY = arrowEndY - 10;
+        double arrowTipX1 = arrowEndX - 5;
+        double arrowTipX2 = arrowEndX + 5;
+
+        cairo_move_to(cr, arrowTipX1, arrowTipY);
+        cairo_line_to(cr, arrowEndX, arrowEndY);
+        cairo_line_to(cr, arrowTipX2, arrowTipY);
+        cairo_fill(cr);
+    }
+
+    x = STARTX;
+    y = STARTY;
+    left_to_right = TRUE;
+    top_to_down = FALSE;
+
+    int num_blocks = f.nb_block;
+
+    double required_height = calculate_required_height(num_blocks) + 100;
+
+    double current_height;
+    gtk_widget_get_size_request(drawing_area, NULL, &current_height);
+    if (required_height > current_height) {
+        gtk_widget_set_size_request(drawing_area, -1, required_height);
+    }
+    int j = 0;
+    for (int i = 1; i <= num_blocks; i++) {
+    
+        if (j % BLOCK_PAR_LIGNE == BLOCK_PAR_LIGNE - 1)
+            top_to_down = TRUE;
+        if(i != highlighted_block){
+            draw_block(widget, cr, GINT_TO_POINTER(i));
+            draw_enregistrement(widget, cr, GINT_TO_POINTER(i));
+        }else{
+            highlight_block_and_record(highlighted_block, highlighted_record);
+        }
+        if (left_to_right) {
+            x += block_width + CELL_SPACING;
+            if (j % BLOCK_PAR_LIGNE == BLOCK_PAR_LIGNE - 1){
+                x -= block_width + CELL_SPACING;
+                y += block_height + CELL_SPACING + 50.0;
+                left_to_right = FALSE;
+            }
+        } else {
+            x -= block_width + CELL_SPACING;
+            if (j % BLOCK_PAR_LIGNE == BLOCK_PAR_LIGNE - 1) {
+                x = CELL_SPACING;
+                y += block_height + CELL_SPACING + 50.0;
+                left_to_right = TRUE;
+            }
+        }
+        j++;
+    }
+
+    return FALSE;
+}
+
 int main(int argc, char* argv[])
 {
     fichier f;
