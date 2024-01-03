@@ -757,6 +757,59 @@ void highlight_block_and_record(int block_index, int record_index) {
     cairo_destroy(cr);
 }
 
+void on_refresh_button_clicked(GtkWidget *widget, gpointer data) {
+    highlighted_block = -1;
+    highlighted_record = -1;
+    update_gui();
+}
+
+void on_search_button_clicked(GtkWidget *widget, gpointer data) {
+    GtkWidget *dialog;
+    GtkWidget *content_area;
+    GtkWidget *entry;
+    gint result;
+
+    bool trouv = FALSE;
+    
+    dialog = gtk_dialog_new_with_buttons("Rechercher un élément",
+        GTK_WINDOW(gtk_widget_get_toplevel(widget)),
+        GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT,
+        "OK", GTK_RESPONSE_OK,
+        "Annuler", GTK_RESPONSE_CANCEL,
+        NULL);
+
+    content_area = gtk_dialog_get_content_area(GTK_DIALOG(dialog));
+
+    entry = gtk_entry_new();
+    gtk_entry_set_placeholder_text(GTK_ENTRY(entry), "Clef");
+    gtk_container_add(GTK_CONTAINER(content_area), entry);
+    gtk_widget_show_all(dialog);
+
+    result = gtk_dialog_run(GTK_DIALOG(dialog));
+
+    if (result == GTK_RESPONSE_OK) {
+        
+        const char *key = gtk_entry_get_text(GTK_ENTRY(entry));
+        char *tmp = strdup(key);
+        recherche(tmp, &trouv, &highlighted_block, &highlighted_record, f);
+        free(tmp);
+        bool *chevau;
+        if (trouv) {
+            highlight_block_and_record(highlighted_block, highlighted_record);      
+        } else {
+            on_refresh_button_clicked(NULL, NULL);
+            GtkWidget *info_dialog = gtk_message_dialog_new(GTK_WINDOW(window),
+                                                             GTK_DIALOG_MODAL,
+                                                             GTK_MESSAGE_INFO,
+                                                             GTK_BUTTONS_OK,
+                                                             "Enregistrement non trouve");
+            gtk_dialog_run(GTK_DIALOG(info_dialog));
+            gtk_widget_destroy(info_dialog);
+        }
+    }
+
+    gtk_widget_destroy(dialog);
+}
 
 int main(int argc, char* argv[])
 {
