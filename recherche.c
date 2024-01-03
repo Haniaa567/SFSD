@@ -4,6 +4,36 @@
 #include<string.h>
 #include <gtk/gtk.h>
 
+#define block_width 250.0
+#define block_height 180.0
+#define field_width 30.0
+#define field_height 20.0
+#define CELL_SPACING 85.0
+#define BLOCK_PAR_LIGNE 4
+#define STARTX 100
+#define STARTY 300
+
+
+typedef struct block
+{
+    char enregistrement[200];
+    int nb_enr;
+    bool suppresion[100];//pour savoir le numero des enregistrement supprimmer
+    bool chevauchement;//si il y a un chevauchement dans le block
+    int res;//espace restant
+    int ocup;//espace occupee
+    struct block* svt;
+}block;
+
+
+typedef struct 
+{
+    int nb_block;
+    int taille_block;
+    bool supp_logique;
+    block *debut;
+    block *fin;
+}fichier;
 // Define global variables pour stocker GTK widgets et autre data
 GtkWidget *window;
 GtkWidget *drawing_area;
@@ -18,24 +48,8 @@ gboolean left_to_right = TRUE;
 gboolean top_to_down = FALSE;
 
 
-typedef struct block
-{
-    char enregistrement[200];
-    int nb_enr;
-    bool suppresion[100];//pour savoir le numero des enregistrement supprimmer
-    bool chevauchement;//si il y a un chevauchement dans le block
-    int res;//espace restant
-    int ocup;//espace occupee
-    struct block* svt;
-}block;
-typedef struct 
-{
-    int nb_block;
-    int taille_block;
-    bool supp_logique;
-    block *debut;
-    block *fin;
-}fichier;
+
+
 
 int entete(fichier F,int i)
 {
@@ -850,10 +864,10 @@ static gboolean draw_file(GtkWidget *widget, cairo_t *cr, gpointer data) {
     cairo_show_text(cr, "Fichier Headers :");
     cairo_move_to(cr, x_f + 10.0, y_f + 60.0);
     char tmp[30];
-    sprintf(tmp, "Nombre blocks : %i", *(int *)entete(f, 0));
+    sprintf(tmp, "Nombre blocks : %i", entete(f, 0));
     cairo_show_text(cr, tmp);
     cairo_move_to(cr, x_f + 10.0, y_f + 80.0);
-    sprintf(tmp, "Taille block : %i", *(int *)entete(f, 2));
+    sprintf(tmp, "Taille block : %i", entete(f, 2));
     cairo_show_text(cr, tmp);
 
     if (f.debut != NULL) {
