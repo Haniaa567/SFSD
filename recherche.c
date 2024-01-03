@@ -533,6 +533,38 @@ void on_insert_button_clicked(GtkWidget *widget, gpointer data) {
 void on_delete_button_clicked(GtkWidget *widget, gpointer data) {
     
 }
+void calculate_block_position(int block_index, double *x_block, double *y_block){
+    int j = 0;
+    *x_block = STARTX;
+    *y_block = STARTY;
+    left_to_right = TRUE;
+    top_to_down = FALSE;
+    bool local_left_to_right = FALSE;
+    for (int i = 1; i < block_index; i++) {
+        if (j % BLOCK_PAR_LIGNE == BLOCK_PAR_LIGNE - 1)
+            top_to_down = TRUE;
+
+        if (left_to_right) {
+            *x_block += block_width + CELL_SPACING;
+            if (j % BLOCK_PAR_LIGNE == BLOCK_PAR_LIGNE - 1){
+                *x_block -= block_width + CELL_SPACING;
+                *y_block += block_height + CELL_SPACING + 50.0;
+                left_to_right = FALSE;
+            }
+        } else {
+            *x_block -= block_width + CELL_SPACING;
+            if (j % BLOCK_PAR_LIGNE == BLOCK_PAR_LIGNE - 1) {
+                *x_block = CELL_SPACING;
+                *y_block += block_height + CELL_SPACING + 50.0;
+                left_to_right = TRUE;
+            }
+        }
+        j++;
+    }
+    left_to_right = TRUE;
+    top_to_down = FALSE;
+}
+
 
 int main(int argc, char* argv[])
 {
