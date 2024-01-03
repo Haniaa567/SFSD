@@ -811,6 +811,32 @@ void on_search_button_clicked(GtkWidget *widget, gpointer data) {
     gtk_widget_destroy(dialog);
 }
 
+/*void on_refresh_button_clicked(GtkWidget *widget, gpointer data) {
+    highlighted_block = -1;
+    highlighted_record = -1;
+    update_gui();
+}*/
+static void on_size_allocate(GtkWidget *widget, GdkRectangle *allocation, gpointer data) {
+    update_gui();
+}
+static void on_scrolled(GtkAdjustment *adjustment, gpointer data) {
+    update_gui();
+}
+static gboolean on_focus_in_event(GtkWidget *widget, GdkEventFocus *event, gpointer user_data) {
+    update_gui();
+    return FALSE;
+}
+
+static gboolean on_focus_out_event(GtkWidget *widget, GdkEventFocus *event, gpointer user_data) {
+    update_gui();
+    return FALSE;
+}
+
+static double calculate_required_height(int num_blocks) {
+    int rows = (num_blocks + BLOCK_PAR_LIGNE - 1) / BLOCK_PAR_LIGNE;
+    return rows * (block_height + CELL_SPACING + 50) + STARTY;
+}
+
 int main(int argc, char* argv[])
 {
     fichier f;
