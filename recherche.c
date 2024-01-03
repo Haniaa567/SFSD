@@ -4,6 +4,18 @@
 #include<string.h>
 #include <gtk/gtk.h>
 
+// Define global variables pour stocker GTK widgets et autre data
+GtkWidget *window;
+GtkWidget *drawing_area;
+fichier f;
+
+// Variables pour suivre la disposition actuelle
+double x = STARTX;
+double y = STARTY;
+int highlighted_block = -1;
+int highlighted_record = -1;
+gboolean left_to_right = TRUE;
+gboolean top_to_down = FALSE;
 
 
 typedef struct block
@@ -248,7 +260,7 @@ void ecrireblock(fichier f,int i,char buffer[])
         //suppression
         for (int i = 0; i < x->nb_enr; i++)
         {
-            x->suppresion[i]=0;
+            x->suppresion[i]=false;
         }
         printf("%d=%dnb\n",i,x->nb_enr);
         
@@ -345,84 +357,169 @@ void recherche(char c[],bool *trouv,int *i,int *j ,fichier f)
             
     }
     (*i)--;//repositioner le numero de block
-}
-// La fonction expose_callback est appelée chaque fois que la zone de dessin (canvas) a besoin d'être redessinée.
-// Elle utilise GTK et Cairo pour dessiner les blocs du fichier.
-
-gboolean affichage(GtkWidget* widget, GdkEventExpose* event, gpointer data) {
-    // Récupération du contexte Cairo à partir du widget
-    //le contexte Cairo est essentiel pour effectuer des opérations de dessin
-    cairo_t* cr;
-    GdkDrawingContext* context;
-    context = gtk_widget_get_draw_context(widget);
-    cr = gdk_drawing_context_get_cairo_context(context);
-
-    // Conversion du pointeur générique en pointeur vers le fichier
-    fichier* f = (fichier*)data;
-
-    // Initialisation des coordonnées et dimensions des blocs
-    int x = 20;
-    int y = 50;
-    int blockWidth = 120;
-    int blockHeight = 80;
-
-    // Affichage de l'en-tête du fichier en bas de la fenêtre
-    cairo_set_source_rgb(cr, 0, 0, 0);
-    cairo_move_to(cr, x, y + blockHeight * 2);
-    cairo_show_text(cr, "En-tête du fichier:");
-    cairo_move_to(cr, x, y + blockHeight * 3);
-    cairo_show_text(cr, g_strdup_printf("Nombre de blocs: %d", f->nb_block));
-    cairo_move_to(cr, x, y + blockHeight * 4);
-    cairo_show_text(cr, g_strdup_printf("Taille des blocs: %d", f->taille_block));
-
-    // Parcours des blocs dans le fichier
-    block* current = f->debut;
-    int k=1;
-    char enregistrement[500];
-    char *strtoken1;
-    char *strtoken2;
-    while (current != NULL) {
-        // Dessin du carré représentant le bloc
-        cairo_rectangle(cr, x, y, blockWidth, blockHeight);
-        cairo_stroke_preserve(cr);
-        cairo_set_source_rgb(cr, 0.8, 0.8, 0.8);
-        cairo_fill(cr);
-
-        // Affichage de l'en-tête du bloc au-dessus du bloc
-        cairo_set_source_rgb(cr, 0, 0, 0);
-        cairo_move_to(cr, x + 10, y - 10);
-        cairo_show_text(cr, g_strdup_printf("Bloc %d", x / (blockWidth + 20) + 1));
-
-        // Dessin du texte à l'intérieur du carré
-        cairo_set_source_rgb(cr, 0, 0, 0);
-        cairo_move_to(cr, x + 10, y + 30);
-        strcpy(enregistrement,current->enregistrement);
-
-
-
-        cairo_show_text(cr, current->enregistrement);
-
-        // Dessin d'une flèche vers le prochain élément s'il existe
-        if (current->svt != NULL) {
-            cairo_move_to(cr, x + blockWidth, y + blockHeight / 2);
-            cairo_line_to(cr, x + blockWidth + 20, y + blockHeight / 2);
-            cairo_line_to(cr, x + blockWidth + 15, y + blockHeight / 2 - 5);
-            cairo_move_to(cr, x + blockWidth + 20, y + blockHeight / 2);
-            cairo_line_to(cr, x + blockWidth + 15, y + blockHeight / 2 + 5);
-            cairo_stroke(cr);
+    bool *supp;
+    supp=enteteblock(f,*i,1);
+    if (*trouv)
+    {
+        if (*(supp+(*j-1)*sizeof(bool))==true)
+        {
+            (*trouv)=false;
         }
+    }
+}
+// dessiner des blocks
 
-        // Mise à jour des coordonnées pour le prochain bloc
-        x += blockWidth + 20;
-        current = current->svt;
-        k++;
+static gboolean draw_block(GtkWidget *widget, cairo_t *cr, gpointer data) {
+    int block_index = GPOINTER_TO_INT(data);
+    block *current_block = f.debut;
+    for (int i = 1; i < block_index; i++) {
+        if (current_block == NULL) {
+            return FALSE;
+        }
+        current_block = current_block->svt;
     }
 
-    // Indique que le traitement de l'événement d'exposition est terminé
+    if (current_block == NULL) {
+        return FALSE;
+    }
+
+    cairo_rectangle(cr, x, y, block_width, block_height + current_block->nb_enr * field_width);
+    cairo_set_source_rgb(cr, 0.8, 0.8, 0.8);
+    cairo_fill_preserve(cr);
+    cairo_set_source_rgb(cr, 0.0, 0.0, 0.0);
+    cairo_stroke(cr);
+
+    cairo_move_to(cr, x + 10.0, y + 20.0);
+    cairo_show_text(cr, "Block Headers :");
+    cairo_move_to(cr, x + 10.0, y + 60.0);
+    char tmp[300];
+    bool *test;
+    test=enteteblock(f, block_index, 0);
+    if(*test)
+        strcpy(tmp,"Chevauchement : Oui");
+    else
+        strcpy(tmp,"Chevauchement : Non");
+    cairo_show_text(cr, tmp);
+    cairo_move_to(cr, x + 10.0, y + 80.0);
+    sprintf(tmp, "Nombre enregistrements : %i", Enteteblock(f, block_index, 3));
+    cairo_show_text(cr, tmp);
+
+    if (current_block->svt != NULL) {
+        if(!top_to_down){
+            double arrowStartX = left_to_right ? x + block_width : x;
+            double arrowStartY = y + block_height / 2.0;
+            double arrowEndX = left_to_right ? x + block_width + CELL_SPACING : x - CELL_SPACING;
+            double arrowEndY = arrowStartY;
+
+            cairo_move_to(cr, arrowStartX, arrowStartY);
+            cairo_line_to(cr, arrowEndX, arrowEndY);
+            cairo_stroke(cr);
+
+            double arrowTipX = left_to_right ? arrowEndX - 10 :  arrowEndX + 10;
+            double arrowTipY1 = arrowEndY - 5;
+            double arrowTipY2 = arrowEndY + 5;
+
+            cairo_move_to(cr, arrowTipX, arrowTipY1);
+            cairo_line_to(cr, arrowEndX, arrowEndY);
+            cairo_line_to(cr, arrowTipX, arrowTipY2);
+            cairo_fill(cr);
+        }else{
+            double arrowStartX = x + block_width / 2.0;
+            double arrowStartY = y + block_height + current_block->nb_enr * field_width;
+            double arrowEndX = arrowStartX;
+            double arrowEndY = y + block_height + CELL_SPACING + 50.0;
+
+            cairo_move_to(cr, arrowStartX, arrowStartY);
+            cairo_line_to(cr, arrowEndX, arrowEndY);
+            cairo_stroke(cr);
+
+            double arrowTipY = arrowEndY - 10;
+            double arrowTipX1 = arrowEndX - 5;
+            double arrowTipX2 = arrowEndX + 5;
+
+            cairo_move_to(cr, arrowTipX1, arrowTipY);
+            cairo_line_to(cr, arrowEndX, arrowEndY);
+            cairo_line_to(cr, arrowTipX2, arrowTipY);
+            cairo_fill(cr);
+            top_to_down = FALSE;
+        }
+    }
+
     return FALSE;
 }
 
-int main()
+static gboolean draw_enregistrement(GtkWidget *widget, cairo_t *cr, gpointer data) {
+    int block_index = GPOINTER_TO_INT(data);
+
+    block *current_block = f.debut;
+    int cpt=1;
+    block *prd=f.debut;
+    for (int i = 1; i < block_index; i++) {
+        if (current_block == NULL) {
+            return FALSE;
+        }
+        prd=current_block;
+        current_block = current_block->svt;
+        cpt++;
+    }
+
+    if (current_block == NULL) {
+        return FALSE;
+    }
+    char *saveptr1=NULL;
+    
+    char *enregistrement = strdup(current_block->enregistrement);
+    char *token = strtok_r(enregistrement, "$", &saveptr1);
+    int field_index = 1;
+    if (prd->chevauchement==true && prd!=current_block)
+    {
+        field_index=0;
+    }
+    
+
+    while (token != NULL) {
+        char *saveptr2=NULL;
+        double x_field = x + 120.0 + field_width;
+        double y_field = y + 100.0 + field_index * field_width;
+        char temp[30];
+        sprintf(temp, "Enregistrement num %i :", field_index);
+        cairo_move_to(cr, x + 10.0, y_field - 2.0);
+        cairo_show_text(cr, temp);
+
+        char *tmp = strdup(token);
+        char *tkn = strtok_r(tmp, "#", &saveptr2);
+        int i = 0;
+        while(tkn){
+            double xc = x_field + i * field_width + 0.2 * sizeof(tkn);
+            cairo_rectangle(cr, xc, y_field, field_width + sizeof(tkn) / 2.0, field_height);
+            cairo_set_source_rgb(cr, 0.9, 0.9, 0.9);
+            cairo_fill_preserve(cr);
+            cairo_set_source_rgb(cr, 0.0, 0.0, 0.0);
+            cairo_stroke(cr);
+            
+            cairo_move_to(cr, xc + 5.0, y_field + field_height - 0.3 * field_height);
+            bool *b = enteteblock(f, cpt, 1);
+            if(field_index!=0 && !b[field_index-1])
+                cairo_show_text(cr, tkn);
+            else if (field_index==0 && prd->chevauchement==true && prd->suppresion[prd->nb_enr-1]==false)
+            {
+                cairo_show_text(cr, tkn);
+            }
+                
+            tkn = strtok_r(NULL, "#", &saveptr2);
+            i++;
+        }
+        free(tmp);
+        token = strtok_r(NULL, "$", &saveptr1);
+        field_index++;
+    }
+
+    free(enregistrement);
+    return FALSE;
+}
+
+
+int main(int argc, char* argv[])
 {
     fichier f;
     f.nb_block=0;
@@ -430,6 +527,7 @@ int main()
     f.supp_logique=true;
     f.debut=NULL;
     f.fin=NULL;
+    bool *test;
     int i=allocblock(&f);
     ecrireblock(f,i,"12#$24#$56\0");
     i=allocblock(&f);
@@ -438,7 +536,7 @@ int main()
     ecrireblock(f,i,"825#$984#$\0");
     bool trouv=false;
     int j;
-    recherche("984\0",&trouv,&i,&j,f);
+    recherche("24\0",&trouv,&i,&j,f);
     if (trouv==true)
     {
         printf("la valeur ce trouve dans le block %d et l'enregistrement %d\n",i,j);
