@@ -518,6 +518,21 @@ static gboolean draw_enregistrement(GtkWidget *widget, cairo_t *cr, gpointer dat
     return FALSE;
 }
 
+void update_gui() {
+    gtk_widget_queue_draw(drawing_area);
+}
+
+
+
+
+void on_insert_button_clicked(GtkWidget *widget, gpointer data) {
+
+}
+
+
+void on_delete_button_clicked(GtkWidget *widget, gpointer data) {
+    
+}
 
 int main(int argc, char* argv[])
 {
