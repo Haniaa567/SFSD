@@ -565,6 +565,198 @@ void calculate_block_position(int block_index, double *x_block, double *y_block)
     top_to_down = FALSE;
 }
 
+static void draw_highlighted_block(cairo_t *cr, int block_index) {
+
+    block *current_block = f.debut;
+    for (int i = 1; i < block_index; i++) {
+        if (current_block == NULL) {
+            return;
+        }
+        current_block = current_block->svt;
+    }
+
+    if (current_block == NULL) {
+        return;
+    }
+    
+    double x_block, y_block;
+
+    calculate_block_position(block_index, &x_block, &y_block);
+
+    cairo_rectangle(cr, x_block, y_block, block_width, block_height + current_block->nb_enr * field_width);
+    cairo_set_source_rgb(cr, 0.35, 0.35, 0.5);
+    cairo_fill_preserve(cr);
+    cairo_set_source_rgb(cr, 0.0, 0.0, 0.0);
+    cairo_stroke(cr);
+
+    cairo_move_to(cr, x_block + 10.0, y_block + 20.0);
+    cairo_show_text(cr, "Block Headers :");
+    cairo_move_to(cr, x_block + 10.0, y_block + 60.0);
+    char tmp[30];
+    bool *test;
+    test=enteteblock(f, block_index, 0);
+    if((*test))
+    {
+        strcpy(tmp,"Chevauchement :oui");
+    }    
+    else
+    {
+        strcpy(tmp,"Chevauchement : Non");
+    }
+        
+    cairo_show_text(cr, tmp);
+    cairo_move_to(cr, x_block + 10.0, y_block + 80.0);
+    sprintf(tmp, "Nombre enregistrements : %i", Enteteblock(f, block_index, 3));
+    cairo_show_text(cr, tmp);
+
+    if (current_block->svt != NULL) {
+        if(!top_to_down){
+            double arrowStartX = left_to_right ? x + block_width : x;
+            double arrowStartY = y + block_height / 2.0;
+            double arrowEndX = left_to_right ? x + block_width + CELL_SPACING : x - CELL_SPACING;
+            double arrowEndY = arrowStartY;
+
+            cairo_move_to(cr, arrowStartX, arrowStartY);
+            cairo_line_to(cr, arrowEndX, arrowEndY);
+            cairo_stroke(cr);
+
+            double arrowTipX = left_to_right ? arrowEndX - 10 :  arrowEndX + 10;
+            double arrowTipY1 = arrowEndY - 5;
+            double arrowTipY2 = arrowEndY + 5;
+
+            cairo_move_to(cr, arrowTipX, arrowTipY1);
+            cairo_line_to(cr, arrowEndX, arrowEndY);
+            cairo_line_to(cr, arrowTipX, arrowTipY2);
+            cairo_fill(cr);
+        }else{
+            double arrowStartX = x + block_width / 2.0;
+            double arrowStartY = y + block_height + current_block->nb_enr * field_width;
+            double arrowEndX = arrowStartX;
+            double arrowEndY = y + block_height + CELL_SPACING + 50.0;
+
+            cairo_move_to(cr, arrowStartX, arrowStartY);
+            cairo_line_to(cr, arrowEndX, arrowEndY);
+            cairo_stroke(cr);
+
+            double arrowTipY = arrowEndY - 10;
+            double arrowTipX1 = arrowEndX - 5;
+            double arrowTipX2 = arrowEndX + 5;
+
+            cairo_move_to(cr, arrowTipX1, arrowTipY);
+            cairo_line_to(cr, arrowEndX, arrowEndY);
+            cairo_line_to(cr, arrowTipX2, arrowTipY);
+            cairo_fill(cr);
+            top_to_down = FALSE;
+        }
+    }
+    
+}
+
+static void draw_highlighted_record(cairo_t *cr, int block_index, int record_index) {
+    
+    block *current_block = f.debut;
+    int cpt=1;
+    for (int i = 1; i < block_index; i++) {
+        if (current_block == NULL) {
+            return;
+        }
+        current_block = current_block->svt;
+        cpt++;
+    }
+
+    if (current_block == NULL) {
+        return;
+    }
+
+
+    double x_block, y_block;
+    calculate_block_position(block_index, &x_block, &y_block);
+
+    char *saveptr1=NULL;
+    
+    char *enregistrement = strdup(current_block->enregistrement);
+    char *token = strtok_r(enregistrement, "$", &saveptr1);
+    int field_index = 1;
+    bool *test;
+    if (block_index!=1)
+    {
+        test=enteteblock(f,block_index-1,0);
+            if ( *test )
+            {
+                field_index--;
+            }
+    }
+    
+    bool suite=false;
+    while (token != NULL) {
+        char *saveptr2=NULL;
+        double x_field = x_block + 120.0 + field_width;
+        double y_field = y_block + 100.0 + field_index * field_width;
+        char temp[30];
+        cairo_set_source_rgb(cr, 0.0, 0.0, 0.0);
+        sprintf(temp, "Enregistrement num %i :", field_index);
+        cairo_move_to(cr, x + 10.0, y_field - 2.0);
+        cairo_show_text(cr, temp);
+
+        char *tmp = strdup(token);
+        char *tkn = strtok_r(tmp, "#", &saveptr2);
+        int i = 0;
+        int x=block_index;
+        while(tkn){
+            double xc = x_field + i * field_width + 0.2 * sizeof(tkn);
+            
+            if(field_index == highlighted_record)
+                cairo_set_source_rgb(cr, 1.0, 0, 0);
+                /*test=enteteblock(f,block_index,0);
+                if (*test && Enteteblock(f,block_index,3)==field_index)
+                {
+                    do
+                    {
+                        x++;
+                        draw_highlighted_record(cr, x, 0);
+                    } while (Enteteblock(f,x,3)==-1);
+                    
+                }*/
+            else{
+                cairo_set_source_rgb(cr, 0.9, 0.9, 0.9);
+            }
+            cairo_rectangle(cr, xc, y_field, field_width + sizeof(tkn) / 2.0, field_height);
+            cairo_fill_preserve(cr);
+            cairo_set_source_rgb(cr, 0.0, 0.0, 0.0);
+            cairo_stroke(cr);
+            
+            cairo_move_to(cr, xc + 5.0, y_field + field_height - 0.3 * field_height);
+
+            bool *b = enteteblock(f, cpt, 1);
+            //if(!b[field_index])
+                cairo_show_text(cr, tkn);
+            tkn = strtok_r(NULL, "#", &saveptr2);
+            i++;
+        }
+        free(tmp);
+        token = strtok_r(NULL, "$", &saveptr1);
+        field_index++;
+    }
+
+    free(enregistrement);
+}
+
+void highlight_block_and_record(int block_index, int record_index) {
+    
+    gtk_widget_queue_draw(drawing_area);
+    cairo_t *cr;
+    cr = gdk_cairo_create(gtk_widget_get_window(drawing_area));
+    //GdkWindow *window = gtk_widget_get_window(drawing_area);
+    //GdkDrawingContext *context = gdk_window_begin_draw_frame(window, NULL);
+    //cr = gdk_drawing_context_get_cairo_context(context);
+
+    draw_highlighted_block(cr, block_index);
+    draw_highlighted_record(cr, block_index, record_index);
+    
+    
+    cairo_destroy(cr);
+}
+
 
 int main(int argc, char* argv[])
 {
