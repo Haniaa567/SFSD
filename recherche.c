@@ -46,6 +46,8 @@ int highlighted_block = -1;
 int highlighted_record = -1;
 gboolean left_to_right = TRUE;
 gboolean top_to_down = FALSE;
+gboolean chvchmnt = FALSE;
+
 
 
 
@@ -742,7 +744,7 @@ static void draw_highlighted_record(cairo_t *cr, int block_index, int record_ind
             cairo_move_to(cr, xc + 5.0, y_field + field_height - 0.3 * field_height);
 
             bool *b = enteteblock(f, cpt, 1);
-            //if(!b[field_index])
+            if(!b[field_index])
                 cairo_show_text(cr, tkn);
             tkn = strtok_r(NULL, "#", &saveptr2);
             i++;
@@ -806,10 +808,18 @@ void on_search_button_clicked(GtkWidget *widget, gpointer data) {
         const char *key = gtk_entry_get_text(GTK_ENTRY(entry));
         char *tmp = strdup(key);
         recherche(tmp, &trouv, &highlighted_block, &highlighted_record, f);
+        g_print("%i",highlighted_record);
         free(tmp);
         bool *chevau;
         if (trouv) {
-            highlight_block_and_record(highlighted_block, highlighted_record);      
+            highlight_block_and_record(highlighted_block, highlighted_record);
+            int j = 1;
+            chvchmnt = *enteteblock(f, highlighted_block, 0) && (highlighted_record == Enteteblock(f, highlighted_block, 3));
+            while(chvchmnt && j <= f.nb_block){
+                chvchmnt = *enteteblock(f, highlighted_block + j, 0) && Enteteblock(f, highlighted_block + j, 3) == 1;
+                highlight_block_and_record(highlighted_block + j, 0);
+                j++;
+            }     
         } else {
             on_refresh_button_clicked(NULL, NULL);
             GtkWidget *info_dialog = gtk_message_dialog_new(GTK_WINDOW(window),
@@ -833,9 +843,11 @@ void on_search_button_clicked(GtkWidget *widget, gpointer data) {
 static void on_size_allocate(GtkWidget *widget, GdkRectangle *allocation, gpointer data) {
     update_gui();
 }
+
 static void on_scrolled(GtkAdjustment *adjustment, gpointer data) {
     update_gui();
 }
+
 static gboolean on_focus_in_event(GtkWidget *widget, GdkEventFocus *event, gpointer user_data) {
     update_gui();
     return FALSE;
@@ -909,11 +921,18 @@ static gboolean draw_file(GtkWidget *widget, cairo_t *cr, gpointer data) {
     
         if (j % BLOCK_PAR_LIGNE == BLOCK_PAR_LIGNE - 1)
             top_to_down = TRUE;
-        if(i != highlighted_block){
+        if(i != highlighted_block && !chvchmnt){
             draw_block(widget, cr, GINT_TO_POINTER(i));
             draw_enregistrement(widget, cr, GINT_TO_POINTER(i));
         }else{
-            highlight_block_and_record(highlighted_block, highlighted_record);
+            if(!chvchmnt)
+                highlight_block_and_record(i, highlighted_record);
+            else
+                highlight_block_and_record(i, 0);
+            if(i == highlighted_block)
+                chvchmnt = *enteteblock(f, i, 0) && (highlighted_record == Enteteblock(f, i, 3));
+            else
+                chvchmnt = *enteteblock(f, i, 0) && Enteteblock(f, i, 3) == 1;
         }
         if (left_to_right) {
             x += block_width + CELL_SPACING;
