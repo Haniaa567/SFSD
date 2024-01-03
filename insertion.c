@@ -24,26 +24,82 @@ typedef struct
     block *fin;
 }fichier;
 
-void insertion(char c[],fichier f)
+void ajout_entete(fichier f,int i,int val)
 {
-   bool trouv;
+switch (i)
+{
+case 1:{
+    f.nb_block=val;
+    break;
+}
+case 2:{
+    f.taille_block=val;
+    break;
+}
+case 3:{
+    f.debut->nb_enr=val;
+    break;
+}
+case 4:{
+    f.debut->ocup=val;
+    break;
+}
+case 5:{
+    f.debut->res=val;
+    break;
+}
+default:
+    break;
+}
+
+}
+void insertion(char c[],char info[],fichier f)
+{
+   bool trouv,stop;
    int i,j,k; 
+   char buffer[200];
 
-recherche(c[],&trouv,&i,&j,f);
+recherche(c,&trouv,&i,&j,f);
 
-if (entete(f,0)==0)
-{
-   int x = allocblock(&f);
-   ecrireblock(f,i,c[]);
-}else 
+
 if (trouv==false)
 {
-    if f.fin->res!=0
+    int taille_eng=strlen(info);
+
+    char* temp_info= (char*)malloc((taille_eng)*sizeof(char));
+    ajout_entete(f,,)
+
+    while (stop==false)
+    {
+        if (entete(f,0)==0){
+        int x = allocblock(&f);
+        ecrireblock(f,x,info);
+        stop=true;
+    }
+       lireblock(f,i,buffer);
+       if (j+taille_eng <= f.fin->res)
+       {
+       ecrireblock(f,i,buffer);
+{
+       }else{
+
+       }
+       
+
+
+
+
+
+    
+    }
+    
+
+
+}else{
+    printf("insertion impossible,cle deja existante!");
 }
 
 
 
-
-
-
+}
 }
