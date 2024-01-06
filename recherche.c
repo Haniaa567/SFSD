@@ -379,7 +379,7 @@ void recherche(char c[],bool *trouv,int *i,int *j ,fichier f)
     supp=enteteblock(f,*i,1);
     if (*trouv)
     {
-        if (*(supp+(*j-1)*sizeof(bool))==true)
+        if (*(supp+((*j)-1)*sizeof(bool))==true)
         {
             (*trouv)=false;
         }
@@ -723,7 +723,7 @@ static void draw_highlighted_record(cairo_t *cr, int block_index, int record_ind
         while(tkn){
             double xc = x_field + i * field_width + 0.2 * sizeof(tkn);
             
-            if(field_index == highlighted_record)
+            if(field_index == record_index)
                 cairo_set_source_rgb(cr, 1.0, 0, 0);
                 /*test=enteteblock(f,block_index,0);
                 if (*test && Enteteblock(f,block_index,3)==field_index)
@@ -813,15 +813,23 @@ void on_search_button_clicked(GtkWidget *widget, gpointer data) {
         g_print("%i",highlighted_record);
         free(tmp);
         bool *chevau;
+        int k=highlighted_block;
         if (trouv) {
             highlight_block_and_record(highlighted_block, highlighted_record);
             int j = 1;
             chvchmnt = *enteteblock(f, highlighted_block, 0) && (highlighted_record == Enteteblock(f, highlighted_block, 3));
-            while(chvchmnt && j <= f.nb_block){
-                chvchmnt = *enteteblock(f, highlighted_block + j, 0) && Enteteblock(f, highlighted_block + j, 3) == 1;
-                highlight_block_and_record(highlighted_block + j, 0);
-                j++;
-            }     
+            if (chvchmnt)
+            {
+                do{
+                    //chvchmnt = *enteteblock(f, highlighted_block + j, 0) && Enteteblock(f, highlighted_block + j, 3) == 1;
+                    highlight_block_and_record(highlighted_block + j, 0);
+                    j++;
+                    k++;
+                }while( Enteteblock(f,k,3)==-1 && k <= f.nb_block);
+             
+            }
+            
+               
         } else {
             on_refresh_button_clicked(NULL, NULL);
             GtkWidget *info_dialog = gtk_message_dialog_new(GTK_WINDOW(window),
