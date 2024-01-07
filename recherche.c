@@ -161,6 +161,8 @@ int Enteteblock(fichier f,int i,int num)
     {
         return x->nb_enr;
     }
+
+    
     return 0;
     
 }
