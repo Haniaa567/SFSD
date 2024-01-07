@@ -282,6 +282,201 @@ void ecrireblock(fichier f,int i,char buffer[])
         
     }
 }
+void sauvegarderFichierEnTexte(const char* nomFichier, fichier maListe) {
+    /*// Ouverture du fichier en mode écriture
+    FILE* fichier = fopen(nomFichier, "w");
+
+    // Vérification si l'ouverture a réussi
+    if (fichier == NULL) {
+        perror("Erreur lors de l'ouverture du fichier");
+        return;
+    }
+
+    // Écriture des informations sur le fichier
+    //fprintf(fichier, "%d %d %d\n", maListe->nb_block, maListe->taille_block, maListe->supp_logique);
+
+    // Parcours de la liste et écriture de chaque bloc dans le fichier
+    block* currentBlock = maListe.debut;
+    int i=1;
+    while (currentBlock != NULL) {
+        fprintf(fichier, "%s \n", currentBlock->enregistrement);
+
+        currentBlock = currentBlock->svt;
+    }
+
+    // Fermeture du fichier*/
+     FILE* fichier = fopen(nomFichier, "w");
+
+    // Vérification si l'ouverture a réussi
+    if (fichier == NULL) {
+        perror("Erreur lors de l'ouverture du fichier");
+        return;
+    }
+
+    // Écriture des informations sur le fichier
+    fprintf(fichier, "%d %d %d\n", maListe.nb_block, maListe.taille_block, maListe.supp_logique);
+
+    // Parcours de la liste et écriture de chaque bloc dans le fichier
+    block* currentBlock = maListe.debut;
+    while (currentBlock != NULL) {
+        fprintf(fichier, "%s %d %d %d %d ", currentBlock->enregistrement, currentBlock->nb_enr,
+                 currentBlock->chevauchement, currentBlock->res, currentBlock->ocup);
+        for (int i = 0; i < currentBlock->nb_enr; i++)
+        {
+            fprintf(fichier, "%d ",currentBlock->suppresion[i]);
+        }
+        fprintf(fichier,"\n");
+                 
+
+        currentBlock = currentBlock->svt;
+    }
+
+    // Fermeture du fichier
+    fclose(fichier);
+}
+
+block* creerNouveauBlock() {
+    block* nouveauBlock = (block*)malloc(sizeof(block));
+    if (nouveauBlock != NULL) {
+        // Initialiser les valeurs du nouveau bloc ici
+        nouveauBlock->svt = NULL;
+    }
+    return nouveauBlock;
+}
+
+void ajouterBlock(fichier* maListe, block* nouveauBlock) {
+    if (maListe->debut == NULL) {
+        // La liste est vide
+        maListe->debut = maListe->fin = nouveauBlock;
+    } else {
+        // Ajouter le bloc à la fin de la liste
+        maListe->fin->svt = nouveauBlock;
+        maListe->fin = nouveauBlock;
+    }
+}
+
+void chargerListeDepuisFichierTexte(const char* nomFichier, fichier* maListe) {
+    // Ouverture du fichier en mode lecture
+    FILE* fichier = fopen(nomFichier, "r");
+
+    // Vérification si l'ouverture a réussi
+    if (fichier == NULL) {
+        perror("Erreur lors de l'ouverture du fichier");
+        return;
+    }
+    int supp,chvchmnt;
+    // Lecture des informations sur le fichier
+    fscanf(fichier, "%d %d %d\n", &maListe->nb_block, &maListe->taille_block, &supp);
+    if(supp==1)
+    {
+        maListe->supp_logique=true;
+    }
+    else
+    {
+        maListe->supp_logique=false;
+    }
+
+    while (!feof(fichier)) {
+        // Création d'un nouveau bloc
+        block* nouveauBlock = creerNouveauBlock();
+
+        // Lecture des propriétés du bloc depuis le fichier
+        fscanf(fichier, "%s %d %d %d %d ", nouveauBlock->enregistrement, &nouveauBlock->nb_enr,
+                &chvchmnt, &nouveauBlock->res, &nouveauBlock->ocup);
+                if(chvchmnt==1)
+                {
+                    nouveauBlock->chevauchement=true;
+                }
+                else
+                {
+                    nouveauBlock->chevauchement=false;
+                }
+        for (int i = 0; i < nouveauBlock->nb_enr; i++)
+        {
+            fscanf(fichier,"%d ",&supp);
+            if(supp==1)
+            {
+                nouveauBlock->suppresion[i]=true;
+            }
+            else
+            {
+                nouveauBlock->suppresion[i]=false;
+            }
+        }
+        fscanf(fichier,"\n");
+        
+        // Ajout du bloc à la liste
+        ajouterBlock(maListe, nouveauBlock);
+    }
+
+    // Fermeture du fichier
+    fclose(fichier);
+}
+
+
+void sauvegarderFichierEnBinaire(const char* nomFichier, fichier* maListe) {
+    // Ouverture du fichier en mode écriture binaire
+    FILE* fichier = fopen(nomFichier, "wb");
+
+    // Vérification si l'ouverture a réussi
+    if (fichier == NULL) {
+        perror("Erreur lors de l'ouverture du fichier");
+        return;
+    }
+
+    // Écriture des informations sur le fichier
+    fwrite(&maListe->nb_block, sizeof(int), 1, fichier);
+    fwrite(&maListe->taille_block, sizeof(int), 1, fichier);
+    fwrite(&maListe->supp_logique, sizeof(bool), 1, fichier);
+
+    // Parcours de la liste et écriture de chaque bloc dans le fichier
+    block* currentBlock = maListe->debut;
+    while (currentBlock != NULL) {
+        fwrite(currentBlock, sizeof(block), 1, fichier);
+        currentBlock = currentBlock->svt;
+    }
+
+    // Fermeture du fichier
+    fclose(fichier);
+}
+
+void chargerListeDepuisFichierBinaire(const char* nomFichier, fichier* maListe) {
+    // Ouverture du fichier en mode lecture binaire
+    FILE* fichier = fopen(nomFichier, "rb");
+
+    // Vérification si l'ouverture a réussi
+    if (fichier == NULL) {
+        perror("Erreur lors de l'ouverture du fichier");
+        return;
+    }
+
+    // Lecture des informations sur le fichier
+    fread(&maListe->nb_block, sizeof(int), 1, fichier);
+    fread(&maListe->taille_block, sizeof(int), 1, fichier);
+    fread(&maListe->supp_logique, sizeof(bool), 1, fichier);
+
+    while (1) {
+        // Création d'un nouveau bloc
+        block* nouveauBlock = (block*)malloc(sizeof(block));
+
+        // Lecture du bloc depuis le fichier
+        size_t bytesRead = fread(nouveauBlock, sizeof(block), 1, fichier);
+
+        // Si la lecture n'a pas réussi, c'est probablement la fin du fichier
+        if (bytesRead != 1) {
+            free(nouveauBlock);
+            break;
+        }
+
+        // Ajout du bloc à la liste
+        nouveauBlock->svt = NULL;
+        ajouterBlock(maListe, nouveauBlock);
+    }
+
+    // Fermeture du fichier
+    fclose(fichier);
+}
+
 
 //en entrée la clé (c) à chercher et le fichier.
 //en sortie le booleen Trouv, le numéro de bloc (i) contenant la clé et le déplacement (j)
@@ -1011,7 +1206,8 @@ int main(int argc, char* argv[])
 
     gtk_box_pack_start(GTK_BOX(vbox), hbox, FALSE, FALSE, 0);
     
-    f.nb_block=0;
+    chargerListeDepuisFichierTexte("testfichier",&f);
+    /*f.nb_block=0;
     f.taille_block=10;
     f.supp_logique=true;
     f.debut=NULL;
@@ -1020,6 +1216,7 @@ int main(int argc, char* argv[])
     block *debut=f.debut;
     int i=allocblock(&f);
     ecrireblock(f,i,"12#$24#$56\0");
+    
     test=enteteblock(f,i,0);
     if (*test==true)
     {
@@ -1052,6 +1249,7 @@ int main(int argc, char* argv[])
     {
         printf("non\n");
     }
+    sauvegarderFichierEnTexte("testfichier",f);*/
 
     /*i=allocblock(&f);
     ecrireblock(f,i,"12#123#$24#$56");
