@@ -963,7 +963,7 @@ static gboolean draw_file(GtkWidget *widget, cairo_t *cr, gpointer data) {
     return FALSE;
 }
 
-int main(int argc, char* argv[])
+int main(int argc, char* argv[])+
 {
     gtk_init(&argc, &argv);
 
