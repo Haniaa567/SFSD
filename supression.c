@@ -353,10 +353,73 @@ void recherche(char c[],bool *trouv,int *i,int *j ,fichier f)
         }
     }
 }
+block* ptr_block(fichier f,int position)
+{
+    block* x=Entete(f,1);
+    int cpt=1;
+    while(cpt!=position && x!=NULL)
+    {
+        cpt++;
+        x=x->svt;
+    } 
+    return x;
+    
+}
+
 void SuppressionLogique(fichier f,char cle[])
 {
     bool trouv;
-    
+    int pos_block,offset_debut,offset_fin,taille_eng;
+    int nb_block=entete(f,0);
+    int chevauchemant=enteteblock(f,i,0);
+    //recuperer les cordonnes de la cle recherche
+        recherche(cle, &trouv, &pos_block, &offset_debut, f);
+        if (trouv) {
+            //pointer vers le bloc ou se trouve la cle
+            block x=ptr_block(f,pos_block);
+            char buffer[200];
+            lireblock(f,pos_block,buffer);
+            char *saveptr;
+            char *strtoken = strtok_r(buffer,"$",&saveptr);
+            //-1-cas ou y'a pas de chevauchement
+            //recuperer l'indice du fin de l'eng 
+            //maj des champs (supression, espace reste, espace occupe)
+            if( !chevauchemant )
+            {
+                offset_fin=strtoken-buffer;
+                for(int i=offset_debut;i<offset_fin;i++)
+                {
+                    x.suppresion[i]=true;
+                }
+                x.ocup=x.ocup-(offset_fin-offset_debut+1);
+                x.res=x.res+(offset_fin-offset_debut+1);
+            }
+            //-2-cas ou l'eng chevauche sur un ou plusieurs blocks
+            //trouver chaque block ou l'en chevauche et mettre a jour ses champs(supression, espace occupe et reste)
+            else {
+                 offset_debut=0;
+                 while(chevauchemant==true && strtoken==NULL )
+            {
+                pos_block++;
+                lireblock(f,pos_block,buffer);
+                strtoken = strtok_r(buffer,"$",&saveptr);
+                chevauchemant=enteteblock(f,pos_block,0);
+                //MAJ
+                offset_fin=strtoken-buffer;
+                x=ptr_block(f,pos_block);
+                for(int i=offset_debut;i<offset_fin;i++)
+                {
+                    x.suppresion[i]=true;
+                }
+                x.ocup=x.ocup-(offset_fin-offset_debut+1);
+                x.res=x.res+(offset_fin-offset_debut+1);
+            }
+            }
+        }
+        //cle non trouve
+        else{
+            printf("error! not available\n");
+        }
 }
 
 int main()
