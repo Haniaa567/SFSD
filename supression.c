@@ -3,6 +3,7 @@
 #include<stdbool.h>
 #include<string.h>
 
+
 typedef struct block
 {
     char enregistrement[200];
@@ -369,50 +370,50 @@ block* ptr_block(fichier f,int position)
 void SuppressionLogique(fichier f,char cle[])
 {
     bool trouv;
-    int pos_block,offset_debut,offset_fin,taille_eng;
+    int pos_block,pos_eng;
+    size_t taille_eng;
     int nb_block=entete(f,0);
-    int chevauchemant=enteteblock(f,i,0);
     //recuperer les cordonnes de la cle recherche
-        recherche(cle, &trouv, &pos_block, &offset_debut, f);
+        recherche(cle, &trouv, &pos_block, &pos_eng, f);
         if (trouv) {
+            bool chevauchemant=enteteblock(f,pos_block,0);
             //pointer vers le bloc ou se trouve la cle
-            block x=ptr_block(f,pos_block);
+            block* x=ptr_block(f,pos_block);
             char buffer[200];
             lireblock(f,pos_block,buffer);
             char *saveptr;
             char *strtoken = strtok_r(buffer,"$",&saveptr);
+            taille_eng=strlen(strtoken);
             //-1-cas ou y'a pas de chevauchement
             //recuperer l'indice du fin de l'eng 
             //maj des champs (supression, espace reste, espace occupe)
             if( !chevauchemant )
             {
-                offset_fin=strtoken-buffer;
-                for(int i=offset_debut;i<offset_fin;i++)
-                {
-                    x.suppresion[i]=true;
-                }
-                x.ocup=x.ocup-(offset_fin-offset_debut+1);
-                x.res=x.res+(offset_fin-offset_debut+1);
+                x->nb_enr=x->nb_enr-1;;
+                x->suppresion[pos_eng]=true;
+                x->ocup=x->ocup-taille_eng;
+                x->res+=taille_eng;
             }
             //-2-cas ou l'eng chevauche sur un ou plusieurs blocks
             //trouver chaque block ou l'en chevauche et mettre a jour ses champs(supression, espace occupe et reste)
             else {
-                 offset_debut=0;
+                pos_block++;
                  while(chevauchemant==true && strtoken==NULL )
             {
-                pos_block++;
                 lireblock(f,pos_block,buffer);
                 strtoken = strtok_r(buffer,"$",&saveptr);
-                chevauchemant=enteteblock(f,pos_block,0);
+                taille_eng=strlen(strtoken);
                 //MAJ
-                offset_fin=strtoken-buffer;
                 x=ptr_block(f,pos_block);
-                for(int i=offset_debut;i<offset_fin;i++)
+                x->suppresion[0]=true;
+                x->ocup-=taille_eng;
+                x->res+=taille_eng;
+                chevauchemant=enteteblock(f,pos_block,0);
+                if(saveptr==buffer + sizeof(buffer) - 1)
                 {
-                    x.suppresion[i]=true;
+                    x->chevauchement=false;
                 }
-                x.ocup=x.ocup-(offset_fin-offset_debut+1);
-                x.res=x.res+(offset_fin-offset_debut+1);
+                pos_block++;
             }
             }
         }
@@ -424,6 +425,32 @@ void SuppressionLogique(fichier f,char cle[])
 
 int main()
 {
+    fichier test;
+    int i,j;
+    bool trouv;
+    char cle[]="bellil";
+    int z=allocblock(&test);
+    ecrireblock(test,z,"bellil#nawel$");
+    z=allocblock(&test);
+    ecrireblock(test,z,"belaredj#amel$");
+    recherche(cle,&trouv,&i,&j,test);
+    if(trouv==true)
+    {
+        printf("val trouvee\n");
+    }
+    else printf("error404, not found");
+
+    SuppressionLogique(test,cle);
+        recherche(cle,&trouv,&i,&j,test);
+    if(trouv==true)
+    {
+        printf("val trouvee\n");
+    }
+    else printf("error404, not found");
+
+    
+
+
     
 
 
