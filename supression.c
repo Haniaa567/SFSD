@@ -374,7 +374,7 @@ block* ptr_block(fichier f,int position)
     return x;
     
 }
-
+//fichier entree sortie??
 void SuppressionLogique(fichier *f,char cle[])
 {
     bool trouv;
@@ -395,6 +395,7 @@ void SuppressionLogique(fichier *f,char cle[])
             char buffer[200];
             lireblock(*f,pos_block,buffer);
             char *saveptr;
+            //il faut trouver la bonne position de l'enregistrement ici ca marche pour 1 mais pas pour le reste
             char *strtoken = strtok_r(buffer,"$",&saveptr);
 
             taille_eng=strlen(strtoken);
@@ -409,8 +410,10 @@ void SuppressionLogique(fichier *f,char cle[])
             }
             else {
                 //Cas ou l'eng chevauche sur un ou plusieurs blocs
+                //il faut d'abord verifier si l'enregitrement qu'on veut supprimer est le dernier enregistrement dans le block pour qu'il puisse chevaucher sur plusieur block
                 pos_block++;
-
+                //au lieu de chauvechement==true on utiliste nb_en==-1(le cas ou il chevauche sur plusieurs blocks)
+                //si il chevauche sur plusieurs block on change res et ocu et nb_en=0 et chvchmt sans changer le tableau supp car j'ai considerer que si il chevauche sur plusieur block le nb_en==-1(des block ou il contiens des morceaux d'enregistrement ) jusqu'a le dernier block ou le chevauche termine pour verifier si il y a d'autre enregistrement avec lui et effactuer les operation nécessaire
                  while(chevauchemant==true && strtoken==NULL && pos_block<=nb_block )
             {
                 lireblock(*f,pos_block,buffer);
