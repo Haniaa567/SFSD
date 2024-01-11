@@ -237,7 +237,7 @@ void ecrireblock(fichier f,int i,char buffer[])
         {
             if (occ!=0 && prd->chevauchement==false && !(x->chevauchement))
             {
-                x->nb_enr=occ+1;
+                x->nb_enr=occ;
             }
             else if (occ!=0 && prd->chevauchement==false && (x->chevauchement))
             {
@@ -254,15 +254,16 @@ void ecrireblock(fichier f,int i,char buffer[])
             }
             else if (occ>1 && prd->chevauchement==true && !(x->chevauchement))
             {
-                x->nb_enr=occ-1;
+                x->nb_enr=occ;
             }
             else if (occ>1 && prd->chevauchement==true && (x->chevauchement))
             {
                 x->nb_enr=occ;
             }
+            
             else if (occ==1 && prd->chevauchement==true && (x->chevauchement))
             {
-                x->nb_enr=-1;
+                x->nb_enr=1;
             }
             else if (occ==1 && prd->chevauchement==true && !(x->chevauchement))
             {
@@ -284,6 +285,39 @@ void ecrireblock(fichier f,int i,char buffer[])
         
     }
 }
+char* extraireEtModifierenregi(const char *chaine, int i) {
+    char *copieChaine = strdup(chaine);  // Duplication pour ne pas modifier la chaîne originale
+    char *token;
+    char *resultat = NULL;
+
+    // Découper la chaîne en utilisant le caractère '$'
+    token = strtok(copieChaine, "$");
+
+    // Parcourir les parties de la chaîne jusqu'à la partie numéro i
+    while (token != NULL && i > 0) {
+        resultat = token;
+        token = strtok(NULL, "$");
+        i--;
+    }
+
+    if (resultat != NULL) {
+        // Remplacer '#' par ' ' dans la partie sélectionnée
+        for (int j = 0; j < strlen(resultat); j++) {
+            if (resultat[j] == '#') {
+                resultat[j] = ' ';
+            }
+        }
+
+        // Dupliquer le résultat pour éviter les problèmes de mémoire
+        resultat = strdup(resultat);
+    }
+
+    // Libérer la mémoire allouée pour la copie initiale
+    free(copieChaine);
+
+    return resultat;
+}
+
 void sauvegarderFichierEnTexte(const char* nomFichier, fichier maListe) {
     /*// Ouverture du fichier en mode écriture
     FILE* fichier = fopen(nomFichier, "w");
@@ -316,21 +350,69 @@ void sauvegarderFichierEnTexte(const char* nomFichier, fichier maListe) {
     }
 
     // Écriture des informations sur le fichier
-    fprintf(fichier, "%d %d %d\n", maListe.nb_block, maListe.taille_block, maListe.supp_logique);
+    //fprintf(fichier, "%d %d %d\n", maListe.nb_block, maListe.taille_block, maListe.supp_logique);
 
     // Parcours de la liste et écriture de chaque bloc dans le fichier
+    char tmp[500];
+    char *affiche;
     block* currentBlock = maListe.debut;
+    int j=1,nb=currentBlock->nb_enr,i=0;
     while (currentBlock != NULL) {
-        fprintf(fichier, "%s %d %d %d %d ", currentBlock->enregistrement, currentBlock->nb_enr,
-                 currentBlock->chevauchement, currentBlock->res, currentBlock->ocup);
+        while (i < nb)
+        {
+            strcpy(tmp,currentBlock->enregistrement);
+            if (currentBlock->suppresion[i]==false)
+            {
+                affiche=extraireEtModifierenregi(tmp,i+1);
+                fprintf(fichier,"%s",affiche);
+                printf("en%d\n",i);
+                if (currentBlock->chevauchement==false || i+1!=currentBlock->nb_enr)
+                {
+                fprintf(fichier,"\n");
+                
+                }
+            }
+            i++;
+        }
+        if(currentBlock->svt!=NULL){
+        if (currentBlock->chevauchement && (currentBlock->nb_enr==-1 ||(currentBlock->nb_enr!=-1 && currentBlock->suppresion[currentBlock->nb_enr-1]==false)))
+        {
+            i=0;
+            if (Enteteblock(f,j+1,3)!=-1)
+            {
+                nb=Enteteblock(f,j+1,3)+1;
+            }
+            else{
+                nb=1;
+            } 
+            printf("1\n");
+        }
+        else if(currentBlock->chevauchement && (currentBlock->nb_enr==0 ||(currentBlock->nb_enr!=0 && currentBlock->suppresion[currentBlock->nb_enr-1])))
+        {
+            i=1;
+            nb=Enteteblock(f,j+1,3);
+            printf("2\n");
+        }
+        else if(!currentBlock->chevauchement)
+        {
+            i=0;
+            nb=Enteteblock(f,j+1,3);
+            printf("3 %d\n",nb);
+            
+        }
+        }
+        /*
         for (int i = 0; i < currentBlock->nb_enr; i++)
         {
             fprintf(fichier, "%d ",currentBlock->suppresion[i]);
         }
-        fprintf(fichier,"\n");
+        fprintf(fichier,"\n");*/
                  
 
         currentBlock = currentBlock->svt;
+        printf("blovk%d\n",j);
+        j++;
+       
     }
 
     // Fermeture du fichier
@@ -577,6 +659,7 @@ void recherche(char c[],bool *trouv,int *i,int *j ,fichier f)
         if (*(supp+((*j)-1)*sizeof(bool))==true)
         {
             (*trouv)=false;
+            (*j)--;
         }
     }
 }
@@ -1160,7 +1243,7 @@ static gboolean draw_file(GtkWidget *widget, cairo_t *cr, gpointer data) {
     return FALSE;
 }
 
-int main(int argc, char* argv[])+
+int main(int argc, char* argv[])
 {
     gtk_init(&argc, &argv);
 
@@ -1208,8 +1291,8 @@ int main(int argc, char* argv[])+
 
     gtk_box_pack_start(GTK_BOX(vbox), hbox, FALSE, FALSE, 0);
     
-    chargerListeDepuisFichierTexte("testfichier",&f);
-    /*f.nb_block=0;
+    //chargerListeDepuisFichierTexte("testfichier",&f);
+    f.nb_block=0;
     f.taille_block=10;
     f.supp_logique=true;
     f.debut=NULL;
@@ -1251,7 +1334,7 @@ int main(int argc, char* argv[])+
     {
         printf("non\n");
     }
-    sauvegarderFichierEnTexte("testfichier",f);*/
+    sauvegarderFichierEnTexte("testfichier",f);
 
     /*i=allocblock(&f);
     ecrireblock(f,i,"12#123#$24#$56");
