@@ -374,7 +374,7 @@ block* ptr_block(fichier f,int position)
     return x;
     
 }
-//fichier entree sortie??
+
 void SuppressionLogique(fichier *f,char cle[])
 {
     bool trouv;
