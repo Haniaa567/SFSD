@@ -375,65 +375,96 @@ block* ptr_block(fichier f,int position)
     
 }
 
-void SuppressionLogique(fichier *f,char cle[])
+void SuppressionLogique(fichier f,char cle[])
 {
     bool trouv;
     int pos_block,pos_eng;
     size_t taille_eng;
-    int nb_block = entete(*f,0);
+    int nb_block = entete(f,0);
 
     //Recuperer les cordonnes de la cle recherchee
-        recherche(cle, &trouv, &pos_block, &pos_eng, *f);
+        recherche(cle, &trouv, &pos_block, &pos_eng, f);
 
         if (trouv) {
-            bool chevauchemant=enteteblock(*f,pos_block,0);
-
             //Pointer vers le bloc ou se trouve la cle
-            block *x=ptr_block(*f,pos_block);
-            
+            block *x=ptr_block(f,pos_block);
+        
             //Lire le bloc
             char buffer[200];
-            lireblock(*f,pos_block,buffer);
+            lireblock(f,pos_block,buffer);
             char *saveptr;
             //il faut trouver la bonne position de l'enregistrement ici ca marche pour 1 mais pas pour le reste
             char *strtoken = strtok_r(buffer,"$",&saveptr);
+            bool chevauchement=enteteblock(f,pos_block,0);
+            taille_eng=strtoken-buffer;
 
-            taille_eng=strlen(strtoken);
             /*On va supprimer l'enregistrement logiquement*/
              //Maj des champs (supression, espace reste, espace occupe)
-            if( !chevauchemant )
-            {
-                x->nb_enr -= 1;
+            //cas 1 : l'enregistrement se trouve dans le dernier bloc
+            if (pos_block=nb_block){
+                 x->nb_enr -= 1;
                 x->suppresion[pos_eng-1] = true;
                 x->ocup -= taille_eng;
                 x->res += taille_eng;
             }
+            //cas 2 : l'enregistrement n'est pas dans le dernier bloc
             else {
-                //Cas ou l'eng chevauche sur un ou plusieurs blocs
-                //il faut d'abord verifier si l'enregitrement qu'on veut supprimer est le dernier enregistrement dans le block pour qu'il puisse chevaucher sur plusieur block
-                pos_block++;
-                //au lieu de chauvechement==true on utiliste nb_en==-1(le cas ou il chevauche sur plusieurs blocks)
-                //si il chevauche sur plusieurs block on change res et ocu et nb_en=0 et chvchmt sans changer le tableau supp car j'ai considerer que si il chevauche sur plusieur block le nb_en==-1(des block ou il contiens des morceaux d'enregistrement ) jusqu'a le dernier block ou le chevauche termine pour verifier si il y a d'autre enregistrement avec lui et effactuer les operation nécessaire
-                 while(chevauchemant==true && strtoken==NULL && pos_block<=nb_block )
-            {
-                lireblock(*f,pos_block,buffer);
-                strtoken = strtok_r(buffer,"$",&saveptr);
-                taille_eng=strlen(strtoken);
-
-                //Maj des champs
-                x = ptr_block(*f,pos_block);
-                x->suppresion[0] = true;
-                x->ocup-=taille_eng;
-                x->res+=taille_eng;
-                chevauchemant=enteteblock(*f,pos_block,0);
-
-                //Mettre a jour le chevauchement si on a atteint la fin du bloc
-                if(saveptr==buffer + sizeof(buffer) - 1)
+                int nb_eng=Enteteblock(f,pos_block,3);
+                //2-1 : l'enregistrement n'est pas le dernier dans le bloc 
+                if(pos_eng!=nb_eng)
                 {
-                    x->chevauchement=false;
+                    x->nb_enr -= 1;
+                    x->suppresion[pos_eng-1] = true;
+                    x->ocup -= taille_eng;
+                    x->res += taille_eng;
                 }
-                pos_block++;
-            }
+                //2-2 : l'enregistrement est le dernier dans le bloc mais ne chevauche pas 
+                else if(pos_eng==nb_eng && chevauchement==false){
+                    x->nb_enr -= 1;
+                    x->suppresion[pos_eng-1] = true;
+                    x->ocup -= taille_eng;
+                    x->res += taille_eng;
+                }
+                //2-3 : l'enregistrement est le dernier dans le bloc et chevauche sur 1 ou plusieurs blocs
+                else if(pos_eng==nb_eng && chevauchement==true )
+                {
+                    x->nb_enr -= 1;
+                    x->suppresion[pos_eng-1] = true;
+                    x->ocup -= taille_eng;
+                    x->res += taille_eng;
+                    pos_block++;
+                    nb_eng=Enteteblock(f,pos_block,3);
+                    //effectuer des changements sur les blocs que l'eng cherche prend carrement
+                    while(pos_block<nb_block && nb_eng==-1)
+                    {
+                        x=ptr_block(f,pos_block);
+                        x->suppresion[0]=true;
+                        x->ocup=0;
+                        x->res=200;
+                        x->nb_enr=0;
+                        x->chevauchement=false;
+                        lireblock(f,pos_block,buffer);
+                        strtoken = strtok_r(buffer,"$",&saveptr);
+                        pos_block++;
+                        nb_eng=Enteteblock(f,pos_block,3);
+                    }
+                    /*le cas du bloc ou se termine l'enregistrement/atteinte du dernier fichier : apart, car si on avance au prochain bloc et on trouve nb_eng!=-1
+                    il faut verifier si il s'est termine au bloc precedent ou bien il y'a encore un morceau dans le bloc crt (*strtoke==NULL)<=>"$" non trouve*/
+                    if( strtoken==NULL) 
+                    {
+                        lireblock(f,pos_block,buffer);
+                        strtoken = strtok_r(buffer,"$",&saveptr);
+                        taille_eng=strtoken-buffer;
+                         x->nb_enr -= 1;
+                         x->suppresion[0] = true;
+                         x->ocup -= taille_eng;
+                         x->res += taille_eng;
+                         if(taille_eng==200){
+                            x->chevauchement=false;
+                         }
+                    }
+
+                }
             }
         }
         //Cle non trouve
@@ -447,26 +478,43 @@ int main()
     fichier test;
     int i,j;
     bool trouv;
-    char cle[]="bellil";
+    char cle1[]="bellil",cle2[]="bellllil";
     int z=allocblock(&test);
-    ecrireblock(test,z,"bellil#nawel$");
+    ecrireblock(test,z,"bellllil#nawel$");
     z=allocblock(&test);
     ecrireblock(test,z,"belaredj#amel$");
-    recherche(cle,&trouv,&i,&j,test);
+    z=allocblock(&test);
+    ecrireblock(test,z,"bellil#napelnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnn$");
+    //sans chevauchement
+    recherche(cle2,&trouv,&i,&j,test);
+    if(trouv==true)
+    {
+        printf("val 2 trouvee\n");
+    }
+    else printf("error404, not found");
+
+    SuppressionLogique(test,cle2);
+        recherche(cle2,&trouv,&i,&j,test);
     if(trouv==true)
     {
         printf("val trouvee\n");
     }
-    else printf("error404, not found");
+    else printf("error404, not found\n");
+    //chevauchement 
+    recherche(cle1,&trouv,&i,&j,test);
+    if(trouv==true)
+    {
+        printf("val 1 trouvee\n");
+    }
+    else printf("error404, not found\n");
 
-    SuppressionLogique(&test,cle);
-        recherche(cle,&trouv,&i,&j,test);
+    SuppressionLogique(test,cle1);
+        recherche(cle1,&trouv,&i,&j,test);
     if(trouv==true)
     {
         printf("val trouvee\n");
     }
-    else printf("error404, not found");
-
+    else printf("error404, not found\n");
     
 
 
