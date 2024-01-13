@@ -739,7 +739,26 @@ void update_gui() {
 
 
 void on_insert_button_clicked(GtkWidget *widget, gpointer data) {
+ GtkWidget *dialog;
+    GtkWidget *content_area;
+    GtkWidget *entry;
+    gint result;
 
+   
+    
+    dialog = gtk_dialog_new_with_buttons("inserer un élément",
+        GTK_WINDOW(gtk_widget_get_toplevel(widget)),
+        GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT,
+        "OK", GTK_RESPONSE_OK,
+        "Annuler", GTK_RESPONSE_CANCEL,
+        NULL);
+
+    content_area = gtk_dialog_get_content_area(GTK_DIALOG(dialog));
+
+    entry = gtk_entry_new();
+    gtk_entry_set_placeholder_text(GTK_ENTRY(entry), "entrer les donnees:");
+    gtk_container_add(GTK_CONTAINER(content_area), entry);
+    gtk_widget_show_all(dialog);
 }
 
 
