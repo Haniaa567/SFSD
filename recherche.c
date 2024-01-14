@@ -822,15 +822,14 @@ void update_gui() {
 
 
 void on_insert_button_clicked(GtkWidget *widget, gpointer data) {
-   GtkWidget *dialog;
+    GtkWidget *dialog;
     GtkWidget *content_area;
     GtkWidget *entry;
-    GtkWidget *labelMatricule;
-    GtkWidget *labelNom;
-    GtkWidget *labelPrenom;
     gint result;
 
-    dialog = gtk_dialog_new_with_buttons("Inserer un élément",
+   
+    
+    dialog = gtk_dialog_new_with_buttons("inserer un élément",
         GTK_WINDOW(gtk_widget_get_toplevel(widget)),
         GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT,
         "OK", GTK_RESPONSE_OK,
@@ -839,30 +838,11 @@ void on_insert_button_clicked(GtkWidget *widget, gpointer data) {
 
     content_area = gtk_dialog_get_content_area(GTK_DIALOG(dialog));
 
-
-    matricule = gtk_entry_new();
-    gtk_entry_set_placeholder_text(GTK_ENTRY(matricule), "Entrer le matricule");
-    gtk_container_add(GTK_CONTAINER(content_area), matricule);
+    entry = gtk_entry_new();
+    gtk_entry_set_placeholder_text(GTK_ENTRY(entry), "entrer les donnees:");
+    gtk_container_add(GTK_CONTAINER(content_area), entry);
     gtk_widget_show_all(dialog);
 
-    nom = gtk_entry_new();
-    gtk_entry_set_placeholder_text(GTK_ENTRY(nom), "Entrer le nom");
-    gtk_container_add(GTK_CONTAINER(content_area), nom);
-    gtk_widget_show_all(dialog);
-    
-    prenom = gtk_entry_new();
-    gtk_entry_set_placeholder_text(GTK_ENTRY(prenom), "Entrer le prenom");
-    gtk_container_add(GTK_CONTAINER(content_area), prenom);
-    gtk_widget_show_all(dialog);
-   
-
-    // Run the dialog and check the response
-    result = gtk_dialog_run(GTK_DIALOG(dialog));
-
-    if (result == GTK_RESPONSE_OK) {
-        
-       
-    }
 
 }
 
