@@ -33,6 +33,7 @@ typedef struct
     bool supp_logique;
     block *debut;
     block *fin;
+    FILE *fich;
 }fichier;
 // Define global variables pour stocker GTK widgets et autre data
 GtkWidget *window;
@@ -47,7 +48,6 @@ int highlighted_record = -1;
 gboolean left_to_right = TRUE;
 gboolean top_to_down = FALSE;
 gboolean chvchmnt = FALSE;
-
 
 
 
@@ -85,6 +85,7 @@ block* Entete(fichier F, int i)
         break;
     } 
 } 
+
 
 int allocblock(fichier *f)
 {
@@ -285,6 +286,7 @@ void ecrireblock(fichier f,int i,char buffer[])
         
     }
 }
+
 char* extraireEtModifierenregi(const char *chaine, int i) {
     char *copieChaine = strdup(chaine);  // Duplication pour ne pas modifier la chaîne originale
     char *token;
@@ -1263,6 +1265,35 @@ static gboolean draw_file(GtkWidget *widget, cairo_t *cr, gpointer data) {
 
     return FALSE;
 }
+void Ouvrir(fichier* f, char* nom_physique, char mode)
+{
+    if((mode == 'N') || (mode == 'n')) //Créer un nouveau fichier
+    {
+        f->fich = fopen(nom_physique, "wb+"); //Ouvrir le fichier en mode écriture écrase le contenu du fichier s'il existe
+        //Initialiser tous les champs de l'entête
+        f->debut = NULL;
+        f->fin = NULL;
+        f->nb_block = 0;
+        f->supp_logique = true;
+        f->taille_block = 10;
+        sauvegarderFichierEnBinaire("binaire",f);
+    }
+    else
+    {
+        if((mode == 'a') || (mode == 'A')) //Ouvrir un ancien fichier
+        {
+            f->fich = fopen(nom_physique, "rb+"); //Ouvrir le fichier en mode lecture ecriture
+            chargerListeDepuisFichierBinaire("binaire", f);
+        }
+    }
+}
+void Fermer(fichier* f)
+{
+    fseek(f->fich,0,SEEK_SET); //Positionne le curseur au début du fichier
+    sauvegarderFichierEnBinaire("binaire",f);
+    fclose(f->fich); //Ferme le fichier
+}
+
 
 int main(int argc, char* argv[])
 {
@@ -1313,12 +1344,13 @@ int main(int argc, char* argv[])
     gtk_box_pack_start(GTK_BOX(vbox), hbox, FALSE, FALSE, 0);
     
     //chargerListeDepuisFichierTexte("testfichier",&f);
-    f.nb_block=0;
+    /*f.nb_block=0;
     f.taille_block=10;
     f.supp_logique=true;
     f.debut=NULL;
-    f.fin=NULL;
-    bool *test;
+    f.fin=NULL;*/
+    Ouvrir(&f,"test",'a');
+    /*bool *test;
     block *debut=f.debut;
     int i=allocblock(&f);
     ecrireblock(f,i,"12#$24#$56\0");
@@ -1355,7 +1387,9 @@ int main(int argc, char* argv[])
     {
         printf("non\n");
     }
-    sauvegarderFichierEnTexte("testfichier",f);
+    //sauvegarderFichierEnBinaire("binaire",&f);*/
+    Fermer(&f);
+    //sauvegarderFichierEnTexte("testfichier",f);
 
     /*i=allocblock(&f);
     ecrireblock(f,i,"12#123#$24#$56");
