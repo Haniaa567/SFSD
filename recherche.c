@@ -254,7 +254,7 @@ void ecrireblock(fichier f,int i,char buffer[])
             }
             else if (occ>1 && prd->chevauchement==true && !(x->chevauchement))
             {
-                x->nb_enr=occ;
+                x->nb_enr=occ-1;
             }
             else if (occ>1 && prd->chevauchement==true && (x->chevauchement))
             {
