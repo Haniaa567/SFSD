@@ -419,5 +419,76 @@ void GenererContenuAlea(Fichier* fichier,char* nom_physique,int nb_livret)
     }
     Fermer(fichier);
 }
+void AfficherFichier(Fichier* fichier,char* nom_physique)
+{
+    Buffer buf;
+    int i,j,index;
+    int nb_taille;
+    char t[NB_TAILLE];
+    char eff;
+    char* d;
+    char* donnee;
+    char num[100];
+    index = 0;
+    int stop = 0;
+    Ouvrir(fichier,nom_physique,'A'); //Ouvrir le fichier en mode ancien
+    i = Entete(fichier,1);
+    j = 0;
+    while(stop == 0)
+    {
+        LireDir(fichier,i,&buf); //Lire le bloc
+        RecupChamp(fichier,NB_TAILLE,&buf,&i,&j,t); //Récupère le champ taille
+        nb_taille = atoi(t);
+        donnee = malloc(sizeof(char)*(nb_taille+1));
+        index = 0;
+        int k = 0;
+        while(t[k] != '\0')
+        {
+            donnee[index] = t[k];
+            index++;
+            k++;
+        }
+        RecupChamp(fichier,1,&buf,&i,&j,&eff); //Récupère le champ effacé
+        RecupChamp(fichier,NB_TAILLE,&buf,&i,&j, num); //Récupère le champ taille
+        d = malloc(sizeof(char)*(nb_taille-strlen(num)));
+        if(!d){
+            fprintf(stderr, "erreur\n");
+            exit(EXIT_FAILURE);
+        }
+        
+        RecupChaine(fichier,nb_taille-1-NB_TAILLE,&buf,&i,&j,d); //Recupère le reste de la donnée
+        
+
+        donnee[index] = '#';
+        index++;
+        donnee[index] = eff;
+        index++;
+        donnee[index] = '#';
+        index++;
+        k=0;
+        while(num[k] != '\0')
+        {
+            donnee[index] = num[k];
+            index++;
+            k++;
+        }
+        donnee[index] = '#';
+        index++;
+        for(int k=0;k<strlen(d);k++)
+        {
+            donnee[index] = d[k];
+            index++;
+        }
+        donnee[index] = '#';
+        index++;
+        donnee[index] = '$';
+        donnee[nb_taille] = '\0';
+        printf("%s\n",donnee); //Afficher l'enregistrement en entier
+        if((i == Entete(fichier,5))&&(j >= Entete(fichier,6))) //Si on arrive à la fin du fichier on stoppe l'affichage
+            stop = 1;
+    }
+    Fermer(fichier);
+}
+
 
 }
