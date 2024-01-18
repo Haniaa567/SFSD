@@ -4,7 +4,6 @@
 #include<string.h>
 #include <gtk/gtk.h>
 #include <time.h>
-
 #define B 100 //Doit etre au moins 36 + NB_TAILLE
 #define NB_TAILLE 6
 
@@ -299,7 +298,7 @@ void EcrireChaine(Fichier* fichier,char* nom_physique,int n,Buffer* buf,int* i,i
     Fermer(fichier); //Fermer le fichier
 }
 
-
+//Une fonction pour demander à l'utilisateur d'entrer chaque champ manuellement et les concaténer en une chaine de caractères
 char* EntrerDonnee(int numero)
 {
     Donnee d; //Déclarer d comme enregistrement
@@ -313,7 +312,6 @@ char* EntrerDonnee(int numero)
 }
 
 void highlight_block_and_record(int block_index, int record_index) ;
-
 //Operations sur LOVC ==============================================================================================================================
 //Cette procédure recherche un livret dans le fichier d'après le numéro
 //i: l'adresse du bloc et j: la position dans le bloc
@@ -349,7 +347,7 @@ void RechercheLOVC(Fichier* fichier,char* nom_physique,int val,int* i,int* j,int
         if(index){
             (*index)++;
             highlight_block_and_record(*i, *index);
-            for(int l = 0; l<100000000; l++);
+            //for(int l = 0; l<100000000; l++);
         }
         sauvi = *i; //Sauvegarder i
         sauvj = *j; //Sauvegarder j
@@ -387,9 +385,10 @@ void RechercheLOVC(Fichier* fichier,char* nom_physique,int val,int* i,int* j,int
         free(d); //On libère l'espace
     }
     //Fermer(fichier); //Fermer le fichier
+}
 
-    //Procédure pour générer des livrets aléatoires
-}    
+
+//Procédure pour générer des livrets aléatoires
 void GenererContenuAlea(Fichier* fichier,char* nom_physique,int nb_livret)
 {
     srand(time(NULL)); //Pour les fonctions aléatoires
@@ -436,6 +435,8 @@ void GenererContenuAlea(Fichier* fichier,char* nom_physique,int nb_livret)
     }
     Fermer(fichier);
 }
+
+//Procédure pour afficher le fichier en entier
 void AfficherFichier(Fichier* fichier,char* nom_physique)
 {
     Buffer buf;
@@ -516,7 +517,7 @@ int highlighted_record = -1;
 gboolean left_to_right = TRUE;
 gboolean top_to_down = FALSE;
 gboolean chvchmnt = FALSE;
-
+// dessiner des blocks
 
 static gboolean draw_block(GtkWidget *widget, cairo_t *cr, gpointer data) {
     int block_index = GPOINTER_TO_INT(data);
@@ -580,7 +581,6 @@ static gboolean draw_block(GtkWidget *widget, cairo_t *cr, gpointer data) {
 
     return FALSE;
 }
-
 
 static gboolean draw_enregistrement(GtkWidget *widget, cairo_t *cr, gpointer data) {
 
@@ -664,15 +664,19 @@ void update_gui() {
 }
 
 
+
+
 void on_insert_button_clicked(GtkWidget *widget, gpointer data) {
 
 }
 
+void on_creation_button_clicked(GtkWidget *widget, gpointer data) {
+
+}
 
 void on_delete_button_clicked(GtkWidget *widget, gpointer data) {
     
 }
-
 void calculate_block_position(int block_index, double *x_block, double *y_block){
     int j = 0;
     *x_block = STARTX - block_width - CELL_SPACING;
@@ -712,7 +716,7 @@ static void draw_highlighted_block(cairo_t *cr, int block_index) {
     for (int i = Entete(&f,1); i <= block_index; i++) {
         LireDir(&f, i, &current_block);
         if (i > Entete(&f,5)) {
-            return FALSE;
+            return /*FALSE*/;
         }  
     }
     int i = block_index, j = 0;
@@ -781,7 +785,7 @@ static void draw_highlighted_record(cairo_t *cr, int block_index, int record_ind
     for (int i = Entete(&f,1); i <= block_index; i++) {
         LireDir(&f, i, &current_block);
         if (i > Entete(&f,5)) {
-            return FALSE;
+            return /*FALSE*/;
         }
         
     }
@@ -880,7 +884,6 @@ void on_refresh_button_clicked(GtkWidget *widget, gpointer data) {
     highlighted_record = -1;
     update_gui();
 }
-
 int nb_enr(char *tmp){
     char *save;
     char *div;
@@ -892,7 +895,6 @@ int nb_enr(char *tmp){
     }
     return i;
 }
-
 void on_search_button_clicked(GtkWidget *widget, gpointer data) {
     GtkWidget *dialog;
     GtkWidget *content_area;
@@ -1082,8 +1084,6 @@ static gboolean draw_file(GtkWidget *widget, cairo_t *cr, gpointer data) {
     return FALSE;
 }
 
-
-
 int main(int argc, char* argv[])
 {
     gtk_init(&argc, &argv);
@@ -1118,21 +1118,32 @@ int main(int argc, char* argv[])
     GtkWidget *delete_button = gtk_button_new_with_label("Supprimer");
     GtkWidget *search_button = gtk_button_new_with_label("Rechercher");
     GtkWidget *refresh_button = gtk_button_new_with_label("Refresh");
+    GtkWidget *creation_button = gtk_button_new_with_label("Creation");
+
 
     g_signal_connect(insert_button, "clicked", G_CALLBACK(on_insert_button_clicked), NULL);
     g_signal_connect(delete_button, "clicked", G_CALLBACK(on_delete_button_clicked), NULL);
     g_signal_connect(search_button, "clicked", G_CALLBACK(on_search_button_clicked), NULL);
     g_signal_connect(refresh_button, "clicked", G_CALLBACK(on_refresh_button_clicked), NULL);
+    g_signal_connect(creation_button, "clicked", G_CALLBACK(on_creation_button_clicked), NULL);
+
 
     GtkWidget *hbox = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 5);
     gtk_box_pack_start(GTK_BOX(hbox), insert_button, TRUE, TRUE, 0);
     gtk_box_pack_start(GTK_BOX(hbox), delete_button, TRUE, TRUE, 0);
     gtk_box_pack_start(GTK_BOX(hbox), search_button, TRUE, TRUE, 0);
     gtk_box_pack_start(GTK_BOX(hbox), refresh_button, TRUE, TRUE, 0);
+    gtk_box_pack_start(GTK_BOX(hbox), creation_button, TRUE, TRUE, 0);
+
 
     gtk_box_pack_start(GTK_BOX(vbox), hbox, FALSE, FALSE, 0);
     strcpy(nom, "ttt");
-    GenererContenuAlea(&f, nom, 30);
+    Ouvrir(&f,nom,'n');
+    //InsertionLOVC(&f,nom,0,"abc");
+    GenererContenuAlea(&f, nom, 10);
+    //InsertionLOVC(&f,nom,1,"bcd");
+    //InsertionLOVC(&f,nom,2,"cde");
+    //GenererContenuAlea(&f, nom, 30);
     AfficherFichier(&f, nom);
     Ouvrir(&f, nom, 'A');
     update_gui();
