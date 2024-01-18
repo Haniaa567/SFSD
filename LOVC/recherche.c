@@ -5,6 +5,19 @@
 #include <gtk/gtk.h>
 #include <time.h>
 
+#define B 100 //Doit etre au moins 36 + NB_TAILLE
+#define NB_TAILLE 6
+
+#define block_width 500.0
+#define block_height 180.0
+#define field_width 80.0
+#define field_height 20.0
+#define CELL_SPACING 85.0
+#define BLOCK_PAR_LIGNE 4
+#define STARTX 100
+#define STARTY 300
+GtkWidget *window;
+GtkWidget *drawing_area;
 
 //Declaration des strucures de types ==================================================================================>
 //Type de l'enregistrement
@@ -286,6 +299,7 @@ void EcrireChaine(Fichier* fichier,char* nom_physique,int n,Buffer* buf,int* i,i
     Fermer(fichier); //Fermer le fichier
 }
 
+
 char* EntrerDonnee(int numero)
 {
     Donnee d; //Déclarer d comme enregistrement
@@ -297,6 +311,8 @@ char* EntrerDonnee(int numero)
     sprintf(d.taille,"%d",NB_TAILLE+1+35+strlen(d.data));
     return ConcatDonnee(d); //Retouner les champs concaténés
 }
+
+void highlight_block_and_record(int block_index, int record_index) ;
 
 //Operations sur LOVC ==============================================================================================================================
 //Cette procédure recherche un livret dans le fichier d'après le numéro
@@ -490,5 +506,78 @@ void AfficherFichier(Fichier* fichier,char* nom_physique)
     Fermer(fichier);
 }
 
+Fichier f;
+char nom[100];
+double x = STARTX;
+double y = STARTY;
+int highlighted_block = -1;
+int highlighted_record = -1;
+gboolean left_to_right = TRUE;
+gboolean top_to_down = FALSE;
+gboolean chvchmnt = FALSE;
+
+
+static gboolean draw_block(GtkWidget *widget, cairo_t *cr, gpointer data) {
+    int block_index = GPOINTER_TO_INT(data);
+    Buffer current_block;
+    for (int i = Entete(&f,1); i <= block_index; i++) {
+        LireDir(&f, i, &current_block);
+        if (i > Entete(&f,5)) {
+            return FALSE;
+        }  
+    }
+    int i = block_index, j = 0;
+
+    cairo_rectangle(cr, x, y, block_width, block_height +  field_width);
+    cairo_set_source_rgb(cr, 0.8, 0.8, 0.8);
+    cairo_fill_preserve(cr);
+    cairo_set_source_rgb(cr, 0.0, 0.0, 0.0);
+    cairo_stroke(cr);
+
+    cairo_move_to(cr, x + 10.0, y + 20.0);
+
+    if (block_index + 1 <= Entete(&f,5)) {
+        if(!top_to_down){
+            double arrowStartX = left_to_right ? x + block_width : x;
+            double arrowStartY = y + block_height / 2.0;
+            double arrowEndX = left_to_right ? x + block_width + CELL_SPACING : x - CELL_SPACING;
+            double arrowEndY = arrowStartY;
+
+            cairo_move_to(cr, arrowStartX, arrowStartY);
+            cairo_line_to(cr, arrowEndX, arrowEndY);
+            cairo_stroke(cr);
+
+            double arrowTipX = left_to_right ? arrowEndX - 10 :  arrowEndX + 10;
+            double arrowTipY1 = arrowEndY - 5;
+            double arrowTipY2 = arrowEndY + 5;
+
+            cairo_move_to(cr, arrowTipX, arrowTipY1);
+            cairo_line_to(cr, arrowEndX, arrowEndY);
+            cairo_line_to(cr, arrowTipX, arrowTipY2);
+            cairo_fill(cr);
+        }else{
+            double arrowStartX = x + block_width / 2.0;
+            double arrowStartY = y + block_height +  field_width;
+            double arrowEndX = arrowStartX;
+            double arrowEndY = y + block_height + CELL_SPACING + 50.0;
+
+            cairo_move_to(cr, arrowStartX, arrowStartY);
+            cairo_line_to(cr, arrowEndX, arrowEndY);
+            cairo_stroke(cr);
+
+            double arrowTipY = arrowEndY - 10;
+            double arrowTipX1 = arrowEndX - 5;
+            double arrowTipX2 = arrowEndX + 5;
+
+            cairo_move_to(cr, arrowTipX1, arrowTipY);
+            cairo_line_to(cr, arrowEndX, arrowEndY);
+            cairo_line_to(cr, arrowTipX2, arrowTipY);
+            cairo_fill(cr);
+            top_to_down = FALSE;
+        }
+    }
+
+    return FALSE;
+}
 
 }
