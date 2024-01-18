@@ -371,4 +371,53 @@ void RechercheLOVC(Fichier* fichier,char* nom_physique,int val,int* i,int* j,int
         free(d); //On libère l'espace
     }
     //Fermer(fichier); //Fermer le fichier
+
+    //Procédure pour générer des livrets aléatoires
+void GenererContenuAlea(Fichier* fichier,char* nom_physique,int nb_livret)
+{
+    srand(time(NULL)); //Pour les fonctions aléatoires
+    int i=1; //Se positionner au début du fichier
+    int j=0;
+    Buffer buf;
+    Ouvrir(fichier,nom_physique,'N'); //Ouvrir le fichier en mode nouveau
+    AllocBloc(fichier); //Allouer le premier bloc du fichier
+    for(int k=0;k<nb_livret;k++) //Insérer les livrets un par un
+    {
+        //LireDir(fichier,i,&buf); //Lire le bloc
+        
+        Donnee nouvelle_donnee; //Créer une nouvelle donnée
+        InitialiserDonnee(&nouvelle_donnee); //L'initialiser
+        sprintf(nouvelle_donnee.numero,"%d",k); //Générer le numéro
+        nouvelle_donnee.data = ChaineAlea(10); //Générer l'observation
+
+        sprintf(nouvelle_donnee.taille,"%d",NB_TAILLE+1+35+strlen(nouvelle_donnee.data)); //Calculer la taille
+        char* str = ConcatDonnee(nouvelle_donnee); //Concaténer tous les champs
+        int index = 0;
+        while(index<strlen(str)) //Insérer la donnée caractère par caractère
+        {
+            if(j<B) //Si la position est inférieure à la taille du bloc
+            {
+                buf.tab[j] = str[index]; //Insérer le caractère
+                index+=1;
+                j+=1;
+            }
+            else //Si le caractère doit s'insérer dans le bloc suivant
+            {
+                //buf.tab[j] = '\0';
+                j=0;
+                EcrireDir(fichier,i,&buf); //On écrit le bloc
+                strcpy(buf.tab,"\0");
+                AllocBloc(fichier); //Alloue un nouveau bloc
+                i=Entete(fichier,5); //Met à jour l'adresse i
+                //LireDir(fichier,i,&buf); //Lire le nouveau bloc
+            }
+        }
+        buf.tab[j] = '\0';
+        EcrireDir(fichier,i,&buf); //Ecrit le dernier bloc
+        Aff_entete(fichier,2,Entete(fichier,2)+strlen(str)); //Met à jour le nombre de caractères insérés dans l'entête
+        Aff_entete(fichier,6,j); //Met à jour la dernière position dans la queue dans l'entête
+    }
+    Fermer(fichier);
+}
+
 }
