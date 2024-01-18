@@ -340,9 +340,46 @@ if(trouv==0){ //si le numero n'existe pas
 
          if(j+sauvtaille<=B)//si l'espace est suffisant pour inserer l'eng
          {
+            for(int k=0;k<sauvtaille;k++)
+            {
+                temp_donnee[k] = buf.tab[j+k];//on sauvegarde le caractere qui se trouve ou on veut insere notre eng
+                buf.tab[j+k] = donnee[k];//on insere un caractere de notre enregistrement
+
+            }
+            temp_donnee[sauvtaille] = '\0';
+            EcrireDir(fichier,i,&buf);//ecrire le bloc
+            j+=sauvtaille; //on avance la position
+            strcpy(donnee,temp_donnee);//copier les caracteres sauvegardees dans la donnee temp dans la donnee qu'on est entrain d'inserer
 
          }else{//si l'espace n'est pas suffisant
 
+             rest = j+sauvtaille - B; //le nombre de caracteres qui va etre inserer dans le bloc suivant
+              l = 0;
+              while(j<B)//insertion des caracteres jusqu'a la fin du bloc
+              {
+                    temp_donnee[l] = buf.tab[j];
+                    buf.tab[j] = donnee[l];
+                    j++;
+                    l++;
+              }
+              EcrireDir(fichier,i,&buf);//ecrire le bloc
+              i = buf.suivant;//on passe au prochain bloc
+              j=0;
+              if(i==-1)//si le bloc courant etait le dernier bloc
+              {
+                 AllocBloc(fichier);//on alloue un nouveau bloc
+                 i = Entete(fichier,5);//maj de l'adresse de la queue
+                stop = 1;//on arrete l'insertion car c'est le dernier bloc
+              }
+              LireDir(fichier,i,&buf);//on lis le nouveau bloc
+              for(int k=0;k<rest;k++)//on insere les caracteres restantes dans le nouveau bloc
+              {
+                    temp_donnee[l] = buf.tab[j];
+                    buf.tab[j] = donnee[l];
+                    j++;
+                    l++;
+
+              }
          }
 
     }
