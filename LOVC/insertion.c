@@ -2,7 +2,7 @@
 #include<stdlib.h>
 #include<stdbool.h>
 #include<string.h>
-#include <gtk/gtk.h>
+//#include <gtk/gtk.h>
 #include <time.h>
 #define B 100 
 #define NB_TAILLE 6
@@ -15,8 +15,8 @@
 #define BLOCK_PAR_LIGNE 4
 #define STARTX 100
 #define STARTY 300
-GtkWidget *window;
-GtkWidget *drawing_area;
+//GtkWidget *window;
+//GtkWidget *drawing_area;
 
 
 //Declaration des strucures de types ==================================================================================>
@@ -347,7 +347,7 @@ void RechercheLOVC(Fichier* fichier,char* nom_physique,int val,int* i,int* j,int
     {
         if(index){
             (*index)++;
-            highlight_block_and_record(*i, *index);
+            //highlight_block_and_record(*i, *index);
             //for(int l = 0; l<100000000; l++);
         }
         sauvi = *i; //Sauvegarder i
@@ -391,7 +391,7 @@ void RechercheLOVC(Fichier* fichier,char* nom_physique,int val,int* i,int* j,int
 // cette procedure insere un nouveau livret d'apres le numero donnee
 void InsertionLOVC(Fichier* fichier,char* nom_physique,int numero,char* donnee)
 {
-Buffer buff;
+Buffer buf;
 int trouv;
 int stop=0;
 int i=1;
@@ -406,8 +406,12 @@ if(trouv==0){ //si le numero n'existe pas
     int sauvtaille = strlen(donnee);//on sauvegarde la taille du nv enregistrement
     Aff_entete(fichier,2,Entete(fichier,2)+sauvtaille);//maj de nb de caracteres inseres
     Aff_entete(fichier,6,(Entete(fichier,6)+sauvtaille)%B);//maj de la derniere pos libre de la queue
-    char* temp_donnee = (char*)malloc((sauvtaille)*sizeof(char));//allouer un espace memoire de meme taille que l'eng
-
+    char* temp_donnee = (char*)malloc((sauvtaille+1)*sizeof(char));//allouer un espace memoire de meme taille que l'eng
+    if (temp_donnee==NULL)
+    {
+        printf("allocation failed");
+    }
+    
     while(stop==0)//boucle d'insertion
     {
          LireDir(fichier,i,&buf);//lire le bloc a l'adresse i
@@ -423,8 +427,8 @@ if(trouv==0){ //si le numero n'existe pas
             temp_donnee[sauvtaille] = '\0';
             EcrireDir(fichier,i,&buf);//ecrire le bloc
             j+=sauvtaille; //on avance la position
-            strcpy(donnee,temp_donnee);//copier les caracteres sauvegardees dans la donnee temp dans la donnee qu'on est entrain d'inserer
-
+            strncpy(donnee,temp_donnee,sauvtaille-1);//copier les caracteres sauvegardees dans la donnee temp dans la donnee qu'on est entrain d'inserer
+            
          }else{//si l'espace n'est pas suffisant
 
              rest = j+sauvtaille - B; //le nombre de caracteres qui va etre inserer dans le bloc suivant
@@ -456,7 +460,7 @@ if(trouv==0){ //si le numero n'existe pas
               }
               temp_donnee[strlen(donnee)] = '\0';
               EcrireDir(fichier,i,&buf);//ecrire le bloc
-              strcpy(donnee,temp_donnee);
+              strncpy(donnee,temp_donnee,sauvtaille);
          }
 
          if((i == Entete(fichier,5))&&(j>Entete(fichier,6)))//si on arrive au dernier bloc et derniere position on arrete l'insertion
@@ -475,4 +479,14 @@ if(trouv==0){ //si le numero n'existe pas
 else{
     printf("insertion impossible,le numero existe deja!");// si le  numero existe deja
 }
+}
+
+int main()
+{
+    Fichier f;
+    Ouvrir(&f,"test",'n');
+    InsertionLOVC(&f,"test",2,"abcd");
+
+    
+    return 0;
 }

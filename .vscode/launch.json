@@ -16,8 +16,8 @@
       "args": [],
       "stopAtEntry": false,
       "externalConsole": true,
-      "cwd": "c:/Users/meriem/Desktop/gtk_project/SFSD",
-      "program": "c:/Users/meriem/Desktop/gtk_project/SFSD/build/Debug/outDebug",
+      "cwd": "c:/Users/meriem/Desktop/gtk_project/SFSD-1",
+      "program": "c:/Users/meriem/Desktop/gtk_project/SFSD-1/build/Debug/outDebug",
       "MIMode": "gdb",
       "miDebuggerPath": "gdb",
       "setupCommands": [
