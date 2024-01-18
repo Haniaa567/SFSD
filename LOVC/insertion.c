@@ -313,3 +313,45 @@ char* EntrerDonnee(int numero)
     sprintf(d.taille,"%d",NB_TAILLE+1+35+strlen(d.data));
     return ConcatDonnee(d); //Retouner les champs concaténés
 }
+
+// cette procedure insere un nouveau livret d'apres le numero donnee
+void InsertionLOVC(Fichier* fichier,char* nom_physique,int numero,char* donnee)
+{
+Buffer buff;
+int trouv;
+int stop=0;
+int i=1;
+int j=0;
+int l=0;
+int rest;
+
+RechercheLOVC(fichier,nom_physique,numero,&i,&j,&trouv, NULL); //On effectue une recherche pour avoir l'adresse i et la position j où insérer
+
+if(trouv==0){ //si le numero n'existe pas
+    Ouvrir(fichier,nom_physique,'A'); //on ouvre le fichier
+    int sauvtaille = strlen(donnee);//on sauvegarde la taille du nv enregistrement
+    Aff_entete(fichier,2,Entete(fichier,2)+sauvtaille);//maj de nb de caracteres inseres
+    Aff_entete(fichier,6,(Entete(fichier,6)+sauvtaille)%B);//maj de la derniere pos libre de la queue
+    char* temp_donnee = (char*)malloc((sauvtaille)*sizeof(char));//allouer un espace memoire de meme taille que l'eng
+
+    while(stop==0)//boucle d'insertion
+    {
+         LireDir(fichier,i,&buf);//lire le bloc a l'adresse i
+
+         if(j+sauvtaille<=B)//si l'espace est suffisant pour inserer l'eng
+         {
+
+         }else{//si l'espace n'est pas suffisant
+
+         }
+
+    }
+
+
+
+
+
+}else{
+    printf("insertion impossible,le numero existe deja!");// si le  numero existe deja
+}
+}
