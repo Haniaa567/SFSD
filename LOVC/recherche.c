@@ -580,4 +580,82 @@ static gboolean draw_block(GtkWidget *widget, cairo_t *cr, gpointer data) {
     return FALSE;
 }
 
+
+static gboolean draw_enregistrement(GtkWidget *widget, cairo_t *cr, gpointer data) {
+
+    int block_index = GPOINTER_TO_INT(data);
+    Buffer current_block;
+    
+    for (int i = Entete(&f,1); i <= block_index; i++) {
+        LireDir(&f, i, &current_block);
+        if (i > Entete(&f,5)) {
+            return FALSE;
+        }
+        
+    }
+
+    char *saveptr1=NULL;
+    
+    char *enregistrement = strdup(current_block.tab);
+    char *token = strtok_r(enregistrement, "$", &saveptr1);
+    int field_index = 1;
+    Buffer tempb;
+    if(block_index > 1){
+        LireDir(&f, block_index - 1, &tempb);
+        if (tempb.tab[strlen(tempb.tab) - 1] != '$')
+        {
+            field_index=0;
+        }
+    }
+    char *eff;
+    eff = strdup("0");
+    while (token != NULL) {
+        char *saveptr3=NULL;
+        char *t = strdup(token);
+        if(field_index == 0){
+            strtok_r(t, "#", &saveptr3);
+            strtok_r(NULL, "#", &saveptr3);
+        }else{
+            eff = strtok_r(t, "#", &saveptr3);
+            eff = strtok_r(NULL, "#", &saveptr3);
+        }
+        
+        if(eff[0] == '0'){
+            char *saveptr2=NULL;
+            double x_field = x + 120.0 + 0.3 * field_width;
+            double y_field = y + 20.0 + field_index * 0.3 * field_width;
+            char temp[30];
+            sprintf(temp, "Enregistrement num %i :", field_index);
+            cairo_move_to(cr, x + 10.0, y_field - 2.0);
+            cairo_show_text(cr, temp);
+
+            char *tmp = strdup(token);
+            char *tkn = strtok_r(tmp, "#", &saveptr2);
+            int i = 0;
+            while(tkn ){
+                double xc = x_field + i * field_width + 0.2 * sizeof(tkn);
+                cairo_rectangle(cr, xc, y_field, field_width + sizeof(tkn) / 2.0, field_height);
+                cairo_set_source_rgb(cr, 0.9, 0.9, 0.9);
+                cairo_fill_preserve(cr);
+                cairo_set_source_rgb(cr, 0.0, 0.0, 0.0);
+                cairo_stroke(cr);
+                
+                cairo_move_to(cr, xc + 5.0, y_field + field_height - 0.3 * field_height);
+                
+                cairo_show_text(cr, tkn);
+                    
+                tkn = strtok_r(NULL, "#", &saveptr2);
+                i++;
+            }
+            free(tmp);
+            free(t);
+            field_index++;
+        }
+        token = strtok_r(NULL, "$", &saveptr1);      
+    }
+
+    free(enregistrement);
+    return FALSE;
+}
+
 }
