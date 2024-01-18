@@ -285,3 +285,15 @@ void EcrireChaine(Fichier* fichier,char* nom_physique,int n,Buffer* buf,int* i,i
     Aff_entete(fichier,2,Entete(fichier,2)+n); //Mettre à jour le nombre de caractères insérés
     Fermer(fichier); //Fermer le fichier
 }
+
+char* EntrerDonnee(int numero)
+{
+    Donnee d; //Déclarer d comme enregistrement
+    InitialiserDonnee(&d); //Initialiser les champs de d
+    sprintf(d.numero,"%d",numero); //Affecter numero(entier) à d.numero(chaine de caractères)
+    printf("\t\t\tEntrez data (sans espaces): ");
+    d.data = (char*)malloc(sizeof(char)*250);
+    scanf("%s",d.data); //Lire le champ observation
+    sprintf(d.taille,"%d",NB_TAILLE+1+35+strlen(d.data));
+    return ConcatDonnee(d); //Retouner les champs concaténés
+}
