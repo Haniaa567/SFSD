@@ -389,6 +389,7 @@ void RechercheLOVC(Fichier* fichier,char* nom_physique,int val,int* i,int* j,int
     //Fermer(fichier); //Fermer le fichier
 
     //Procédure pour générer des livrets aléatoires
+}    
 void GenererContenuAlea(Fichier* fichier,char* nom_physique,int nb_livret)
 {
     srand(time(NULL)); //Pour les fonctions aléatoires
@@ -791,7 +792,7 @@ static void draw_highlighted_record(cairo_t *cr, int block_index, int record_ind
     calculate_block_position(block_index, &x_block, &y_block);
 
     
-char *saveptr1=NULL;
+    char *saveptr1=NULL;
     
     char *enregistrement = strdup(current_block.tab);
     char *token = strtok_r(enregistrement, "$", &saveptr1);
@@ -1081,4 +1082,63 @@ static gboolean draw_file(GtkWidget *widget, cairo_t *cr, gpointer data) {
     return FALSE;
 }
 
+
+
+int main(int argc, char* argv[])
+{
+    gtk_init(&argc, &argv);
+
+    window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
+    gtk_window_set_title(GTK_WINDOW(window), "File Visualization");
+    gtk_window_set_default_size(GTK_WINDOW(window), 2500, 1000);
+    g_signal_connect(window, "destroy", G_CALLBACK(gtk_main_quit), NULL);
+
+
+    GtkWidget *vbox = gtk_box_new(GTK_ORIENTATION_VERTICAL, 5);
+    gtk_container_add(GTK_CONTAINER(window), vbox);
+
+    drawing_area = gtk_drawing_area_new();
+    gtk_widget_set_size_request(drawing_area, 2500, 1000);
+    GtkWidget *scrolled_window = gtk_scrolled_window_new(NULL, NULL);
+    gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(scrolled_window),
+                                GTK_POLICY_AUTOMATIC, GTK_POLICY_AUTOMATIC);
+    gtk_container_add(GTK_CONTAINER(scrolled_window), drawing_area);
+    gtk_box_pack_start(GTK_BOX(vbox), scrolled_window, TRUE, TRUE, 0);
+
+    g_signal_connect(drawing_area, "draw", G_CALLBACK(draw_file), NULL);
+    g_signal_connect(drawing_area, "size-allocate", G_CALLBACK(on_size_allocate), NULL);
+    GtkAdjustment *vadjustment;
+    vadjustment = gtk_scrolled_window_get_vadjustment(GTK_SCROLLED_WINDOW(scrolled_window));
+    g_signal_connect(vadjustment, "value-changed", G_CALLBACK(on_scrolled), NULL);
+    g_signal_connect(window, "focus-in-event", G_CALLBACK(on_focus_in_event), NULL);
+    g_signal_connect(window, "focus-out-event", G_CALLBACK(on_focus_out_event), NULL);
+
+
+    GtkWidget *insert_button = gtk_button_new_with_label("Inserer");
+    GtkWidget *delete_button = gtk_button_new_with_label("Supprimer");
+    GtkWidget *search_button = gtk_button_new_with_label("Rechercher");
+    GtkWidget *refresh_button = gtk_button_new_with_label("Refresh");
+
+    g_signal_connect(insert_button, "clicked", G_CALLBACK(on_insert_button_clicked), NULL);
+    g_signal_connect(delete_button, "clicked", G_CALLBACK(on_delete_button_clicked), NULL);
+    g_signal_connect(search_button, "clicked", G_CALLBACK(on_search_button_clicked), NULL);
+    g_signal_connect(refresh_button, "clicked", G_CALLBACK(on_refresh_button_clicked), NULL);
+
+    GtkWidget *hbox = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 5);
+    gtk_box_pack_start(GTK_BOX(hbox), insert_button, TRUE, TRUE, 0);
+    gtk_box_pack_start(GTK_BOX(hbox), delete_button, TRUE, TRUE, 0);
+    gtk_box_pack_start(GTK_BOX(hbox), search_button, TRUE, TRUE, 0);
+    gtk_box_pack_start(GTK_BOX(hbox), refresh_button, TRUE, TRUE, 0);
+
+    gtk_box_pack_start(GTK_BOX(vbox), hbox, FALSE, FALSE, 0);
+    strcpy(nom, "ttt");
+    GenererContenuAlea(&f, nom, 30);
+    AfficherFichier(&f, nom);
+    Ouvrir(&f, nom, 'A');
+    update_gui();
+
+    gtk_widget_show_all(window);
+    gtk_main();
+
+    return 0;
 }
