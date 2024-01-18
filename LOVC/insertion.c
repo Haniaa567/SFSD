@@ -314,6 +314,80 @@ char* EntrerDonnee(int numero)
     return ConcatDonnee(d); //Retouner les champs concaténés
 }
 
+
+
+
+void RechercheLOVC(Fichier* fichier,char* nom_physique,int val,int* i,int* j,int* trouv, int *index)
+{
+    Buffer buf; //Pour lire et écrire les blocs
+    int stop; //Pour stopper la boucle dans certaines conditions
+    int sauvi; //Pour sauvegarder i
+    int sauvj; //Pour sauvegarder j
+    char taille[NB_TAILLE];
+    char numero[10];
+    char eff;
+    char* d; //La chaine de caratères d'un enregistrement après le champ taille, eff et numero
+    int nb_taille,nb_numero; //Les champs taille et numero en entiers
+    if(index)
+        *index = -1;
+    Ouvrir(fichier,nom_physique,'A'); //Ouvrir le fichier en mode ancien
+    *trouv = 0; //Positionner trouv à Faux
+    stop = 0; //Positionner stop à Faux
+    *i = Entete(fichier,1);
+    *j = 0;
+    LireDir(fichier,*i,&buf); //Lire le premier bloc
+
+    //Le cas d'un fichier vide
+    if((*j>=Entete(fichier,6))&&(*i>=Entete(fichier,5)))
+    {
+        stop = 1; //stop à Vrai
+    }
+
+    while((*trouv == 0)&&(stop == 0)) //Tant qu'on a pas trouvé le livret et que aucune condition n'a été vérifiée pour stopper la boucle
+    {
+        if(index){
+            (*index)++;
+            highlight_block_and_record(*i, *index);
+            //for(int l = 0; l<100000000; l++);
+        }
+        sauvi = *i; //Sauvegarder i
+        sauvj = *j; //Sauvegarder j
+        RecupChamp(fichier,NB_TAILLE,&buf,i,j,taille); //sa le champ taille (le i et j sont mis à jour après le champ)
+        nb_taille = atoi(taille); //Récupérer le champ en tant qu'entier
+        RecupChamp(fichier,1,&buf,i,j,&eff); //Récupérer le champ eff
+        RecupChamp(fichier,10,&buf,i,j,numero); //savep champ numéro
+        nb_numero = atoi(numero); //Récupérer le champ en tant qu'entier
+        d = malloc(sizeof(char)*(nb_taille-NB_TAILLE-10));
+        RecupChaine(fichier,nb_taille-NB_TAILLE-11,&buf,i,j,d); //Récupérer le reste de l'enregistrement
+
+        if(nb_numero == val) //Le meme numéro a été trouvé
+        {
+            if(eff == '0') //Le livret n'est pas effecé donc il a été trouvé
+                *trouv = 1; //trouv à Vrai
+            else
+                stop = 1; //Le livret a été supprimé donc on met stop à Vrai
+            *i = sauvi; //Récupérer i avant d'avoir lu cet enregistrement
+            *j = sauvj; //Récupérer j avant d'avoir lu cet enregistrement
+        }
+        else
+        {
+            if(nb_numero>val) //Si la valeur recherchée est inférieure à la valeur lue il ne sert à rien de continuer la recherche donc il faut la stopper
+            {
+                stop = 1; //stop à Vrai
+                *i = sauvi; //Récupérer i avant d'avoir lu cet enregistrement
+                *j = sauvj; //Récupérer j avant d'avoir lu cet enregistrement
+            }
+        }
+        if((*j>=Entete(fichier,6))&&(*i>=Entete(fichier,5))) //Si on arrive à la fin du fichier
+        {
+            stop = 1; //stop à Vrai
+        }
+
+        free(d); //On libère l'espace
+    }
+    //Fermer(fichier); //Fermer le fichier
+}
+
 // cette procedure insere un nouveau livret d'apres le numero donnee
 void InsertionLOVC(Fichier* fichier,char* nom_physique,int numero,char* donnee)
 {
