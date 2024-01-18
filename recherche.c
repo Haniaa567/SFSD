@@ -3,6 +3,7 @@
 #include<stdbool.h>
 #include<string.h>
 #include <gtk/gtk.h>
+#include <unistd.h>
 
 #define block_width 250.0
 #define block_height 180.0
@@ -1065,14 +1066,10 @@ void highlight_block_and_record(int block_index, int record_index) {
     gtk_widget_queue_draw(drawing_area);
     cairo_t *cr;
     cr = gdk_cairo_create(gtk_widget_get_window(drawing_area));
-    //GdkWindow *window = gtk_widget_get_window(drawing_area);
-    //GdkDrawingContext *context = gdk_window_begin_draw_frame(window, NULL);
-    //cr = gdk_drawing_context_get_cairo_context(context);
-
+    
+    
     draw_highlighted_block(cr, block_index);
     draw_highlighted_record(cr, block_index, record_index);
-    
-    
     cairo_destroy(cr);
 }
 
@@ -1087,6 +1084,8 @@ void on_search_button_clicked(GtkWidget *widget, gpointer data) {
     GtkWidget *content_area;
     GtkWidget *entry;
     gint result;
+    
+
 
     bool trouv = FALSE;
     
@@ -1105,7 +1104,7 @@ void on_search_button_clicked(GtkWidget *widget, gpointer data) {
     gtk_widget_show_all(dialog);
 
     result = gtk_dialog_run(GTK_DIALOG(dialog));
-
+    
     if (result == GTK_RESPONSE_OK) {
         
         const char *key = gtk_entry_get_text(GTK_ENTRY(entry));
@@ -1115,7 +1114,21 @@ void on_search_button_clicked(GtkWidget *widget, gpointer data) {
         free(tmp);
         bool *chevau;
         int k=highlighted_block;
+        int tmpi=0,tmpj=0;
+        
+        /*while (tmpi<highlighted_block)
+        {
+            tmpj=0;
+            while (tmpj<highlighted_record ||(tmpj<Enteteblock(f,tmpi,3) && highlighted_block!=tmpi))
+            {
+                highlight_block_and_record(tmpi, tmpj);
+                tmpj++;
+                g_usleep(50000);
+            }
+            tmpi++;
+        }*/
         if (trouv) {
+            
             highlight_block_and_record(highlighted_block, highlighted_record);
             int j = 1;
             chvchmnt = *enteteblock(f, highlighted_block, 0) && (highlighted_record == Enteteblock(f, highlighted_block, 3));
@@ -1349,8 +1362,8 @@ int main(int argc, char* argv[])
     f.supp_logique=true;
     f.debut=NULL;
     f.fin=NULL;*/
-    Ouvrir(&f,"test",'a');
-    /*bool *test;
+    Ouvrir(&f,"test",'n');
+    bool *test;
     block *debut=f.debut;
     int i=allocblock(&f);
     ecrireblock(f,i,"12#$24#$56\0");
@@ -1386,10 +1399,10 @@ int main(int argc, char* argv[])
     else
     {
         printf("non\n");
-    }
-    //sauvegarderFichierEnBinaire("binaire",&f);*/
+    }    
+    sauvegarderFichierEnTexte("testfichier",f);
+
     Fermer(&f);
-    //sauvegarderFichierEnTexte("testfichier",f);
 
     /*i=allocblock(&f);
     ecrireblock(f,i,"12#123#$24#$56");
