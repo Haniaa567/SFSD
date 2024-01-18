@@ -380,15 +380,25 @@ if(trouv==0){ //si le numero n'existe pas
                     l++;
 
               }
+              temp_donnee[strlen(donnee)] = '\0';
+              EcrireDir(fichier,i,&buf);//ecrire le bloc
+              strcpy(donnee,temp_donnee);
+         }
+
+         if((i == Entete(fichier,5))&&(j>Entete(fichier,6)))//si on arrive au dernier bloc et derniere position on arrete l'insertion
+         {
+            stop = 1; 
          }
 
     }
+        free(temp_donnee);
+        Fermer(fichier);
 
 
 
 
-
-}else{
+}
+else{
     printf("insertion impossible,le numero existe deja!");// si le  numero existe deja
 }
 }
