@@ -658,4 +658,427 @@ static gboolean draw_enregistrement(GtkWidget *widget, cairo_t *cr, gpointer dat
     return FALSE;
 }
 
+void update_gui() {
+    gtk_widget_queue_draw(drawing_area);
+}
+
+
+void on_insert_button_clicked(GtkWidget *widget, gpointer data) {
+
+}
+
+
+void on_delete_button_clicked(GtkWidget *widget, gpointer data) {
+    
+}
+
+void calculate_block_position(int block_index, double *x_block, double *y_block){
+    int j = 0;
+    *x_block = STARTX - block_width - CELL_SPACING;
+    *y_block = STARTY;
+    printf("\n 2ww %f %f \n", *x_block, *y_block);
+    left_to_right = TRUE;
+    top_to_down = FALSE;
+    for (int i = Entete(&f, 1); i <= block_index; i++) {
+        if (j % BLOCK_PAR_LIGNE == BLOCK_PAR_LIGNE - 1)
+            top_to_down = TRUE;
+
+        if (left_to_right) {
+            *x_block += block_width + CELL_SPACING;
+            if (j % BLOCK_PAR_LIGNE == BLOCK_PAR_LIGNE - 1){
+                *x_block -= block_width + CELL_SPACING;
+                *y_block += block_height + CELL_SPACING + 50.0;
+                left_to_right = FALSE;
+            }
+        } else {
+            *x_block -= block_width + CELL_SPACING;
+            if (j % BLOCK_PAR_LIGNE == BLOCK_PAR_LIGNE - 1) {
+                *x_block = CELL_SPACING;
+                *y_block += block_height + CELL_SPACING + 50.0;
+                left_to_right = TRUE;
+            }
+        }
+        j++;
+    }
+     printf("\n ww %f %f \n", *x_block, *y_block);
+    left_to_right = TRUE;
+    top_to_down = FALSE;
+}
+
+static void draw_highlighted_block(cairo_t *cr, int block_index) {
+
+    Buffer current_block;
+    for (int i = Entete(&f,1); i <= block_index; i++) {
+        LireDir(&f, i, &current_block);
+        if (i > Entete(&f,5)) {
+            return FALSE;
+        }  
+    }
+    int i = block_index, j = 0;
+    
+    double x_block, y_block;
+
+    calculate_block_position(block_index, &x_block, &y_block);
+    
+    printf("\n %f %f \n", x_block, y_block);
+    cairo_rectangle(cr, x_block, y_block, block_width , block_height +  field_width );
+    cairo_set_source_rgb(cr, 0.35, 0.35, 0.5);
+    cairo_fill_preserve(cr);
+    cairo_set_source_rgb(cr, 0.0, 0.0, 0.0);
+    cairo_stroke(cr);
+
+    cairo_move_to(cr, x_block + 10.0, y_block + 20.0);
+    
+
+    if (block_index + 1 <= Entete(&f,5)) {
+        if(!top_to_down){
+            double arrowStartX = left_to_right ? x + block_width : x;
+            double arrowStartY = y + block_height / 2.0;
+            double arrowEndX = left_to_right ? x + block_width + CELL_SPACING : x - CELL_SPACING;
+            double arrowEndY = arrowStartY;
+
+            cairo_move_to(cr, arrowStartX, arrowStartY);
+            cairo_line_to(cr, arrowEndX, arrowEndY);
+            cairo_stroke(cr);
+
+            double arrowTipX = left_to_right ? arrowEndX - 10 :  arrowEndX + 10;
+            double arrowTipY1 = arrowEndY - 5;
+            double arrowTipY2 = arrowEndY + 5;
+
+            cairo_move_to(cr, arrowTipX, arrowTipY1);
+            cairo_line_to(cr, arrowEndX, arrowEndY);
+            cairo_line_to(cr, arrowTipX, arrowTipY2);
+            cairo_fill(cr);
+        }else{
+            double arrowStartX = x + block_width / 2.0;
+            double arrowStartY = y + block_height +  field_width;
+            double arrowEndX = arrowStartX;
+            double arrowEndY = y + block_height + CELL_SPACING + 50.0;
+
+            cairo_move_to(cr, arrowStartX, arrowStartY);
+            cairo_line_to(cr, arrowEndX, arrowEndY);
+            cairo_stroke(cr);
+
+            double arrowTipY = arrowEndY - 10;
+            double arrowTipX1 = arrowEndX - 5;
+            double arrowTipX2 = arrowEndX + 5;
+
+            cairo_move_to(cr, arrowTipX1, arrowTipY);
+            cairo_line_to(cr, arrowEndX, arrowEndY);
+            cairo_line_to(cr, arrowTipX2, arrowTipY);
+            cairo_fill(cr);
+            top_to_down = FALSE;
+        }
+    }
+    
+}
+
+static void draw_highlighted_record(cairo_t *cr, int block_index, int record_index) {
+    
+    Buffer current_block;
+    
+    for (int i = Entete(&f,1); i <= block_index; i++) {
+        LireDir(&f, i, &current_block);
+        if (i > Entete(&f,5)) {
+            return FALSE;
+        }
+        
+    }
+
+    
+
+    double x_block, y_block;
+    calculate_block_position(block_index, &x_block, &y_block);
+
+    
+char *saveptr1=NULL;
+    
+    char *enregistrement = strdup(current_block.tab);
+    char *token = strtok_r(enregistrement, "$", &saveptr1);
+    int field_index = 1;
+    Buffer tempb;
+    if(block_index > 1){
+        LireDir(&f, block_index - 1, &tempb);
+        if (tempb.tab[strlen(tempb.tab) - 1] != '$')
+        {
+            field_index=0;
+        }
+    }
+    char *eff;
+    eff = strdup("0");
+    while (token != NULL) {
+        char *saveptr3=NULL;
+        char *t = strdup(token);
+        if(field_index == 0){
+            strtok_r(t, "#", &saveptr3);
+            strtok_r(NULL, "#", &saveptr3);
+        }else{
+            eff = strtok_r(t, "#", &saveptr3);
+            eff = strtok_r(NULL, "#", &saveptr3);
+        }
+        
+        if(eff[0] == '0'){
+            char *saveptr2=NULL;
+            double x_field = x + 120.0 + 0.3 * field_width;
+            double y_field = y + 20.0 + field_index * 0.3 * field_width;
+            char temp[30];
+            sprintf(temp, "Enregistrement num %i :", field_index);
+            cairo_move_to(cr, x + 10.0, y_field - 2.0);
+            cairo_show_text(cr, temp);
+
+            char *tmp = strdup(token);
+            char *tkn = strtok_r(tmp, "#", &saveptr2);
+            int i = 0;
+            while(tkn){
+                double xc = x_field + i * field_width + 0.2 * sizeof(tkn);
+                
+                if(field_index - 1 == record_index)
+                    cairo_set_source_rgb(cr, 1.0, 0, 0);
+                else{
+                    cairo_set_source_rgb(cr, 0.9, 0.9, 0.9);
+                }
+                cairo_rectangle(cr, xc, y_field, field_width + sizeof(tkn) / 2.0, field_height);
+                cairo_fill_preserve(cr);
+                cairo_set_source_rgb(cr, 0.0, 0.0, 0.0);
+                cairo_stroke(cr);
+                
+                cairo_move_to(cr, xc + 5.0, y_field + field_height - 0.3 * field_height);
+                
+                cairo_show_text(cr, tkn);
+                    
+                tkn = strtok_r(NULL, "#", &saveptr2);
+                i++;
+            }
+            free(tmp);
+        }
+        field_index++;
+        token = strtok_r(NULL, "$", &saveptr1);
+    }
+
+    free(enregistrement);
+}
+
+void highlight_block_and_record(int block_index, int record_index) {
+    
+    gtk_widget_queue_draw(drawing_area);
+    cairo_t *cr;
+    cr = gdk_cairo_create(gtk_widget_get_window(drawing_area));
+    //GdkWindow *window = gtk_widget_get_window(drawing_area);
+    //GdkDrawingContext *context = gdk_window_begin_draw_frame(window, NULL);
+    //cr = gdk_drawing_context_get_cairo_context(context);
+
+    draw_highlighted_block(cr, block_index);
+    draw_highlighted_record(cr, block_index, record_index);
+    
+    
+    cairo_destroy(cr);
+}
+
+void on_refresh_button_clicked(GtkWidget *widget, gpointer data) {
+    highlighted_block = -1;
+    highlighted_record = -1;
+    update_gui();
+}
+
+int nb_enr(char *tmp){
+    char *save;
+    char *div;
+    int i = 0;
+    div = strtok_r(tmp, "$", &save);
+    while(div){
+        i++;
+        div = strtok_r(NULL, "$", &save);
+    }
+    return i;
+}
+
+void on_search_button_clicked(GtkWidget *widget, gpointer data) {
+    GtkWidget *dialog;
+    GtkWidget *content_area;
+    GtkWidget *entry;
+    gint result;
+
+    bool trouv = FALSE;
+    
+    dialog = gtk_dialog_new_with_buttons("Rechercher un élément",
+        GTK_WINDOW(gtk_widget_get_toplevel(widget)),
+        GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT,
+        "OK", GTK_RESPONSE_OK,
+        "Annuler", GTK_RESPONSE_CANCEL,
+        NULL);
+
+    content_area = gtk_dialog_get_content_area(GTK_DIALOG(dialog));
+
+    entry = gtk_entry_new();
+    gtk_entry_set_placeholder_text(GTK_ENTRY(entry), "Clef");
+    gtk_container_add(GTK_CONTAINER(content_area), entry);
+    gtk_widget_show_all(dialog);
+
+    result = gtk_dialog_run(GTK_DIALOG(dialog));
+
+    if (result == GTK_RESPONSE_OK) {
+        
+        const char *key = gtk_entry_get_text(GTK_ENTRY(entry));
+        char *tmp = strdup(key);
+        int tmpj;
+        RechercheLOVC(&f, nom, atoi(tmp), &highlighted_block, &tmpj, &trouv, &highlighted_record);
+        g_print("\n%i %i\n",highlighted_block,highlighted_record);
+        free(tmp);
+        Buffer tempb;
+        LireDir(&f, highlighted_block, &tempb);
+        bool ch = tempb.tab[strlen(tempb.tab) - 1] != '$';
+        int k=highlighted_block;
+        int nb_enrg = nb_enr(tempb.tab);
+        
+        if (trouv) {
+            highlight_block_and_record(highlighted_block, highlighted_record);
+            int j = 1;
+            chvchmnt = ch && (highlighted_record == nb_enrg-1);
+            if (chvchmnt)
+            {
+                do{
+                    highlight_block_and_record(highlighted_block + j, -1);
+                    LireDir(&f, highlighted_block + j, &tempb);
+                    j++;
+                    k++;
+                }while( nb_enr(tempb.tab) == 1 && tempb.tab[strlen(tempb.tab) - 1] != '$' && k <= Entete(&f, 4));
+             
+            }
+            
+               
+        } else {
+            on_refresh_button_clicked(NULL, NULL);
+            GtkWidget *info_dialog = gtk_message_dialog_new(GTK_WINDOW(window),
+                                                             GTK_DIALOG_MODAL,
+                                                             GTK_MESSAGE_INFO,
+                                                             GTK_BUTTONS_OK,
+                                                             "Enregistrement non trouve");
+            gtk_dialog_run(GTK_DIALOG(info_dialog));
+            gtk_widget_destroy(info_dialog);
+        }
+    }
+
+    gtk_widget_destroy(dialog);
+}
+
+static void on_size_allocate(GtkWidget *widget, GdkRectangle *allocation, gpointer data) {
+    update_gui();
+}
+
+static void on_scrolled(GtkAdjustment *adjustment, gpointer data) {
+    update_gui();
+}
+
+static gboolean on_focus_in_event(GtkWidget *widget, GdkEventFocus *event, gpointer user_data) {
+    update_gui();
+    return FALSE;
+}
+
+static gboolean on_focus_out_event(GtkWidget *widget, GdkEventFocus *event, gpointer user_data) {
+    update_gui();
+    return FALSE;
+}
+
+static double calculate_required_height(int num_blocks) {
+    int rows = (num_blocks + BLOCK_PAR_LIGNE - 1) / BLOCK_PAR_LIGNE;
+    return rows * (block_height + CELL_SPACING + 50) + STARTY;
+}
+
+static gboolean draw_file(GtkWidget *widget, cairo_t *cr, gpointer data) {
+
+    double x_f = STARTX, y_f = 20.0;
+    cairo_rectangle(cr, x_f, y_f, block_width, block_height);
+    cairo_set_source_rgb(cr, 0.8, 0.8, 0.8);
+    cairo_fill_preserve(cr);
+    cairo_set_source_rgb(cr, 0.0, 0.0, 0.0);
+    cairo_stroke(cr);
+
+    cairo_move_to(cr, x_f + 10.0, y_f + 20.0);
+    cairo_show_text(cr, "Fichier Headers :");
+    cairo_move_to(cr, x_f + 10.0, y_f + 60.0);
+    char tmp[30];
+    sprintf(tmp, "Nombre blocks : %i", Entete(&f, 4));
+    cairo_show_text(cr, tmp);
+    cairo_move_to(cr, x_f + 10.0, y_f + 80.0);
+    sprintf(tmp, "nb insert : %i", Entete(&f, 2));
+    cairo_show_text(cr, tmp);
+
+    if (Entete(&f, 4)) {
+        double arrowStartX = x_f + block_width / 2.0;
+        double arrowStartY = y_f + block_height;
+        double arrowEndX = arrowStartX;
+        double arrowEndY = STARTY;
+
+        cairo_move_to(cr, arrowStartX, arrowStartY);
+        cairo_line_to(cr, arrowEndX, arrowEndY);
+        cairo_stroke(cr);
+
+        double arrowTipY = arrowEndY - 10;
+        double arrowTipX1 = arrowEndX - 5;
+        double arrowTipX2 = arrowEndX + 5;
+
+        cairo_move_to(cr, arrowTipX1, arrowTipY);
+        cairo_line_to(cr, arrowEndX, arrowEndY);
+        cairo_line_to(cr, arrowTipX2, arrowTipY);
+        cairo_fill(cr);
+    }
+
+    x = STARTX;
+    y = STARTY;
+    left_to_right = TRUE;
+    top_to_down = FALSE;
+
+    int num_blocks = Entete(&f, 4);
+
+    double required_height = calculate_required_height(num_blocks) + 100;
+
+    double current_height;
+    gtk_widget_get_size_request(drawing_area, NULL, &current_height);
+    if (required_height > current_height) {
+        gtk_widget_set_size_request(drawing_area, -1, required_height);
+    }
+    int j = 0;
+    Buffer tempb;
+    for (int i = Entete(&f,1); i <= Entete(&f,5); i++) {
+    
+        if (j % BLOCK_PAR_LIGNE == BLOCK_PAR_LIGNE - 1)
+            top_to_down = TRUE;
+        if(i != highlighted_block && !chvchmnt){
+            draw_block(widget, cr, GINT_TO_POINTER(i));
+            draw_enregistrement(widget, cr, GINT_TO_POINTER(i));
+        }else{
+            if(!chvchmnt)
+                highlight_block_and_record(i, highlighted_record);
+            else
+                highlight_block_and_record(i, -1);
+            if(i == highlighted_block){
+                LireDir(&f, i, &tempb);
+                chvchmnt = tempb.tab[strlen(tempb.tab)-1] != '$' && (highlighted_record == nb_enr(tempb.tab)-1);
+            }
+            else{
+                LireDir(&f, i, &tempb);
+                chvchmnt = tempb.tab[strlen(tempb.tab)-1] != '$' && nb_enr(tempb.tab) == 1;
+            }
+        }
+        if (left_to_right) {
+            x += block_width + CELL_SPACING;
+            if (j % BLOCK_PAR_LIGNE == BLOCK_PAR_LIGNE - 1){
+                x -= block_width + CELL_SPACING;
+                y += block_height + CELL_SPACING + 50.0;
+                left_to_right = FALSE;
+            }
+        } else {
+            x -= block_width + CELL_SPACING;
+            if (j % BLOCK_PAR_LIGNE == BLOCK_PAR_LIGNE - 1) {
+                x = CELL_SPACING;
+                y += block_height + CELL_SPACING + 50.0;
+                left_to_right = TRUE;
+            }
+        }
+        j++;
+    }
+
+    return FALSE;
+}
+
 }
