@@ -225,8 +225,8 @@ char* ConcatDonnee(Donnee d)
 void RecupChamp(Fichier* fichier,int n,Buffer* buf,int* i,int* j,char* donnee)
 {
     int k = 0;
-    printf("%d",*j);
-    while(buf->tab[*j] != '#')
+   
+    while(*j < B && buf->tab[*j] != '#')
     {
         //printf("\nbbb %s\n", buf->tab);
         if(*j>=sizeof(buf->tab)) //En cas où le champ est divisé sur plus d'un bloc
@@ -252,7 +252,7 @@ void RecupChamp(Fichier* fichier,int n,Buffer* buf,int* i,int* j,char* donnee)
 void RecupChaine(Fichier* fichier,int n,Buffer* buf,int* i,int* j,char donnee[])
 {
     int k = 0;
-    while(buf->tab[*j] != '#')
+    while(*j < B && buf->tab[*j] != '#' && buf->tab[*j] != '$')
     {
         
         if(*j>=sizeof(buf->tab)) //En cas où la chaine est divisée sur plus d'un bloc
@@ -261,11 +261,13 @@ void RecupChaine(Fichier* fichier,int n,Buffer* buf,int* i,int* j,char donnee[])
             *j = 0; //Rénitiliser le j à 0 (au début du nouveau bloc)
             LireDir(fichier,*i,buf);
         }
+        
         //printf("\nbbb %c\n", buf->tab[*j]);
         donnee[k] = buf->tab[*j];
         (*j)+=1;
         k+=1;
     }
+    donnee[k] = '\0';
     (*j)+=1;
     if(buf->tab[*j] == '$')
         (*j)+=1;
