@@ -225,7 +225,7 @@ char* ConcatDonnee(Donnee d)
 void RecupChamp(Fichier* fichier,int n,Buffer* buf,int* i,int* j,char* donnee)
 {
     int k = 0;
-    
+    printf("%d",*j);
     while(buf->tab[*j] != '#')
     {
         //printf("\nbbb %s\n", buf->tab);
@@ -406,7 +406,9 @@ if(trouv==0){ //si le numero n'existe pas
     int sauvtaille = strlen(donnee);//on sauvegarde la taille du nv enregistrement
     Aff_entete(fichier,2,Entete(fichier,2)+sauvtaille);//maj de nb de caracteres inseres
     Aff_entete(fichier,6,(Entete(fichier,6)+sauvtaille)%B);//maj de la derniere pos libre de la queue
+    
     char* temp_donnee = (char*)malloc((sauvtaille+1)*sizeof(char));//allouer un espace memoire de meme taille que l'eng
+    char* tmp=malloc(sauvtaille+1);
     if (temp_donnee==NULL)
     {
         printf("allocation failed");
@@ -427,8 +429,8 @@ if(trouv==0){ //si le numero n'existe pas
             temp_donnee[sauvtaille] = '\0';
             EcrireDir(fichier,i,&buf);//ecrire le bloc
             j+=sauvtaille; //on avance la position
-            strncpy(donnee,temp_donnee,sauvtaille-1);//copier les caracteres sauvegardees dans la donnee temp dans la donnee qu'on est entrain d'inserer
-            
+            strncpy(tmp,temp_donnee,sauvtaille-1);//copier les caracteres sauvegardees dans la donnee temp dans la donnee qu'on est entrain d'inserer
+           tmp[sauvtaille] = '\0'; 
          }else{//si l'espace n'est pas suffisant
 
              rest = j+sauvtaille - B; //le nombre de caracteres qui va etre inserer dans le bloc suivant
@@ -460,7 +462,7 @@ if(trouv==0){ //si le numero n'existe pas
               }
               temp_donnee[strlen(donnee)] = '\0';
               EcrireDir(fichier,i,&buf);//ecrire le bloc
-              strncpy(donnee,temp_donnee,sauvtaille);
+              strncpy(tmp,temp_donnee,sauvtaille);
          }
 
          if((i == Entete(fichier,5))&&(j>Entete(fichier,6)))//si on arrive au dernier bloc et derniere position on arrete l'insertion
@@ -481,12 +483,83 @@ else{
 }
 }
 
+void AfficherFichier(Fichier* fichier,char* nom_physique)
+{
+    Buffer buf;
+    int i,j,index;
+    int nb_taille;
+    char t[NB_TAILLE];
+    char eff;
+    char* d;
+    char* donnee;
+    char num[100];
+    index = 0;
+    int stop = 0;
+    Ouvrir(fichier,nom_physique,'A'); //Ouvrir le fichier en mode ancien
+    i = Entete(fichier,1);
+    j = 0;
+    while(stop == 0)
+    {
+        LireDir(fichier,i,&buf); //Lire le bloc
+        RecupChamp(fichier,NB_TAILLE,&buf,&i,&j,t); //Récupère le champ taille
+        nb_taille = atoi(t);
+        donnee = malloc(sizeof(char)*(nb_taille+1));
+        index = 0;
+        int k = 0;
+        while(t[k] != '\0')
+        {
+            donnee[index] = t[k];
+            index++;
+            k++;
+        }
+        RecupChamp(fichier,1,&buf,&i,&j,&eff); //Récupère le champ effacé
+        RecupChamp(fichier,NB_TAILLE,&buf,&i,&j, num); //Récupère le champ taille
+        d = malloc(sizeof(char)*(nb_taille-strlen(num)));
+        if(!d){
+            fprintf(stderr, "erreur\n");
+            exit(EXIT_FAILURE);
+        }
+        
+        RecupChaine(fichier,nb_taille-1-NB_TAILLE,&buf,&i,&j,d); //Recupère le reste de la donnée
+        
+
+        donnee[index] = '#';
+        index++;
+        donnee[index] = eff;
+        index++;
+        donnee[index] = '#';
+        index++;
+        k=0;
+        while(num[k] != '\0')
+        {
+            donnee[index] = num[k];
+            index++;
+            k++;
+        }
+        donnee[index] = '#';
+        index++;
+        for(int k=0;k<strlen(d);k++)
+        {
+            donnee[index] = d[k];
+            index++;
+        }
+        donnee[index] = '#';
+        index++;
+        donnee[index] = '$';
+        donnee[nb_taille] = '\0';
+        printf("%s\n",donnee); //Afficher l'enregistrement en entier
+        if((i == Entete(fichier,5))&&(j >= Entete(fichier,6))) //Si on arrive à la fin du fichier on stoppe l'affichage
+            stop = 1;
+    }
+    Fermer(fichier);
+}
+
 int main()
 {
     Fichier f;
     Ouvrir(&f,"test",'n');
     InsertionLOVC(&f,"test",2,"abcd");
-
+    AfficherFichier(&f,"test");
     
     return 0;
 }
