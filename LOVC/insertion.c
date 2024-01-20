@@ -120,7 +120,7 @@ void LireDir(Fichier* fichier, int i, Buffer* buf)
 //Ecrire le bloc à l'adresse i
 void EcrireDir(Fichier* fichier, int i, Buffer* buf)
 { 
-    buf->tab[sizeof(buf->tab)] = '\0';
+    buf->tab[B-1] = '\0';
     fseek(fichier->fich,(sizeof(TypeEntete)+sizeof(Buffer)*(i-1)),SEEK_SET); //Positionner le curseur à l'adresse i
     fwrite(buf,sizeof(Buffer),1,fichier->fich); //Ecrire le bloc
 }
@@ -560,7 +560,11 @@ int main()
 {
     Fichier f;
     Ouvrir(&f,"test",'n');
-    InsertionLOVC(&f,"test",2,"abcd");
+    InsertionLOVC(&f,"test",0,"abcdefghij");
+    InsertionLOVC(&f,"test",1,"abcdefghik");
+    InsertionLOVC(&f,"test",2,"abcdefghij");
+    InsertionLOVC(&f,"test",3,"abcdefghij");
+
     AfficherFichier(&f,"test");
     
     return 0;

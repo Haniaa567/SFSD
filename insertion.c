@@ -244,56 +244,56 @@ void ecrireblock(fichier f,int i,char buffer[])
 
 void ajout_entete(fichier f,int i,int val)
 {
-switch (i)
-{
-case 1:{
-    f.nb_block=val;
-    break;
-}
-case 2:{
-    f.taille_block=val;
-    break;
-}
-case 3:{
-    f.debut->nb_enr=val;
-    break;
-}
-case 4:{
-    f.debut->ocup=val;
-    break;
-}
-case 5:{
-    f.debut->res=val;
-    break;
-}
-default:
-    break;
-}
-
-int Enteteblock(fichier f,int i,int num)
-{
-    int cpt=1;
-    block *x=Entete(f,1);//l'adresse de debut
-    //chercher la bonne position de bloc
-    while (cpt!=i && (x)!=NULL)
+    switch (i)
     {
-        cpt++;
-        x=x->svt;
+    case 1:{
+        f.nb_block=val;
+        break;
     }
-    if (num==3)
-    {
-        return x->nb_enr;
+    case 2:{
+        f.taille_block=val;
+        break;
     }
-    if (num==4)
-    {
-        return x->res;
+    case 3:{
+        f.debut->nb_enr=val;
+        break;
+    }
+    case 4:{
+        f.debut->ocup=val;
+        break;
+    }
+    case 5:{
+        f.debut->res=val;
+        break;
+    }
+    default:
+        break;
     }
 
-    
-    
-    return 0;
-    
-}
+    int Enteteblock(fichier f,int i,int num)
+    {
+        int cpt=1;
+        block *x=Entete(f,1);//l'adresse de debut
+        //chercher la bonne position de bloc
+        while (cpt!=i && (x)!=NULL)
+        {
+            cpt++;
+            x=x->svt;
+        }
+        if (num==3)
+        {
+            return x->nb_enr;
+        }
+        if (num==4)
+        {
+            return x->res;
+        }
+
+        
+        
+        return 0;
+        
+    }
 }
 
 void recherche(char c[],bool *trouv,int *i,int *j ,fichier f)
