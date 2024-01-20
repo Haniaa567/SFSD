@@ -20,6 +20,10 @@ GtkWidget *drawing_area;
 int highlighted_block = -1;
 int highlighted_record = -1;
 
+char nom[100];
+double x = STARTX;
+double y = STARTY;
+
 //Declaration des strucures de types ==================================================================================>
 //Type de l'enregistrement
 typedef struct Donnee Donnee;
@@ -54,7 +58,7 @@ struct Fichier{
     TypeEntete entete; //Le champ de l'entete
     FILE* fich; //Le fichier
 };
-
+Fichier f;
 //Implementation de la machine abstraite ========================================================================================
 //Renvoie pour chaque numero le champ de l'entete qui correspond
 int Entete(Fichier* fichier,int i)
@@ -153,6 +157,7 @@ void Ouvrir(Fichier* fichier, char* nom_physique, char mode)
 //Ferme le fichier
 void Fermer(Fichier* fichier)
 {
+    fflush(fichier->fich);
     fseek(fichier->fich,0,SEEK_SET); //Positionne le curseur au début du fichier
     fwrite(&(fichier->entete),sizeof(TypeEntete),1,fichier->fich); //Sauvegarde l'entête
     fclose(fichier->fich); //Ferme le fichier
@@ -228,7 +233,7 @@ void RecupChamp(Fichier* fichier,int n,Buffer* buf,int* i,int* j,char* donnee)
     
     while(buf->tab[*j] != '#')
     {
-        //printf("\nbbb %s\n", buf->tab);
+        //printf("\nbbb %s %i\n", buf->tab, *j);
         if(*j>=sizeof(buf->tab)) //En cas où le champ est divisé sur plus d'un bloc
         {   
             (*i)+=1;
@@ -283,10 +288,16 @@ void EcrireChaine(Fichier* fichier,char* nom_physique,int n,Buffer* buf,int* i,i
     {
         if(*j>=B) //Si la chaine dépasse la capacité du bloc
         {
-            EcrireDir(fichier,*i,buf); //Ecrire le bloc à l'adresse i
-            AllocBloc(fichier); //Allouer un nouveau bloc à la fin du fichier et le chainer
-            *i = Entete(fichier,5); //Mettre à jour i à l'adresse de la queue de la liste
             *j = 0; //Réinitialiser j à 0
+            EcrireDir(fichier,*i,buf);
+            if((*i)+1>Entete(&f,5)){
+                AllocBloc(fichier); //Allouer un nouveau bloc à la fin du fichier et le chainer
+                *i = Entete(fichier,5); //Mettre à jour i à l'adresse de la queue de la liste
+                
+            }else{
+
+                (*i)++;
+            }
             LireDir(fichier,*i,buf); //Lire le nouveau bloc
         }
         buf->tab[*j] = donnee[k]; //Mettre à jour un caractère du buffer avec un caractère de la chaine qu'on veut écrire
@@ -294,6 +305,11 @@ void EcrireChaine(Fichier* fichier,char* nom_physique,int n,Buffer* buf,int* i,i
         k+=1;
     }
     donnee[k] = '\0';
+    int l = *j;
+    while (l<B){
+        buf->tab[l] = '<';
+        l++;
+    }
     EcrireDir(fichier,*i,buf); //Ecrire le bloc à l'adresse i
     Aff_entete(fichier,6,*j); //Mettre à jour la dernière position libre dans la queue
     Aff_entete(fichier,2,Entete(fichier,2)+n); //Mettre à jour le nombre de caractères insérés
@@ -312,7 +328,6 @@ char* EntrerDonnee(int numero)
     sprintf(d.taille,"%d",NB_TAILLE+1+35+strlen(d.data));
     return ConcatDonnee(d); //Retouner les champs concaténés
 }
-
 static gboolean draw_file(GtkWidget *widget, cairo_t *cr, gpointer data) ;
 //Operations sur LOVC ==============================================================================================================================
 //Cette procédure recherche un livret dans le fichier d'après le numéro
@@ -336,6 +351,7 @@ void RechercheLOVC(Fichier* fichier,char* nom_physique,int val,int* i,int* j,int
     stop = 0; //Positionner stop à Faux
     *i = Entete(fichier,1);
     *j = 0;
+    if(index)
     *index = 0;
     LireDir(fichier,*i,&buf); //Lire le premier bloc
 
@@ -401,53 +417,18 @@ void RechercheLOVC(Fichier* fichier,char* nom_physique,int val,int* i,int* j,int
     //Fermer(fichier); //Fermer le fichier
 }
 
-
-//Procédure pour générer des livrets aléatoires
-void GenererContenuAlea(Fichier* fichier,char* nom_physique,int nb_livret)
+char * GenererContenu(char* temp, int num)
 {
-    srand(time(NULL)); //Pour les fonctions aléatoires
-    int i=1; //Se positionner au début du fichier
-    int j=0;
-    Buffer buf;
-    Ouvrir(fichier,nom_physique,'N'); //Ouvrir le fichier en mode nouveau
-    AllocBloc(fichier); //Allouer le premier bloc du fichier
-    for(int k=0;k<nb_livret;k++) //Insérer les livrets un par un
-    {
-        //LireDir(fichier,i,&buf); //Lire le bloc
-        
-        Donnee nouvelle_donnee; //Créer une nouvelle donnée
-        InitialiserDonnee(&nouvelle_donnee); //L'initialiser
-        sprintf(nouvelle_donnee.numero,"%d",k); //Générer le numéro
-        nouvelle_donnee.data = ChaineAlea(10); //Générer l'observation
 
-        sprintf(nouvelle_donnee.taille,"%d",NB_TAILLE+1+35+strlen(nouvelle_donnee.data)); //Calculer la taille
-        char* str = ConcatDonnee(nouvelle_donnee); //Concaténer tous les champs
-        int index = 0;
-        while(index<strlen(str)) //Insérer la donnée caractère par caractère
-        {
-            if(j<B) //Si la position est inférieure à la taille du bloc
-            {
-                buf.tab[j] = str[index]; //Insérer le caractère
-                index+=1;
-                j+=1;
-            }
-            else //Si le caractère doit s'insérer dans le bloc suivant
-            {
-                //buf.tab[j] = '\0';
-                j=0;
-                EcrireDir(fichier,i,&buf); //On écrit le bloc
-                strcpy(buf.tab,"\0");
-                AllocBloc(fichier); //Alloue un nouveau bloc
-                i=Entete(fichier,5); //Met à jour l'adresse i
-                //LireDir(fichier,i,&buf); //Lire le nouveau bloc
-            }
-        }
-        buf.tab[j] = '\0';
-        EcrireDir(fichier,i,&buf); //Ecrit le dernier bloc
-        Aff_entete(fichier,2,Entete(fichier,2)+strlen(str)); //Met à jour le nombre de caractères insérés dans l'entête
-        Aff_entete(fichier,6,j); //Met à jour la dernière position dans la queue dans l'entête
-    }
-    Fermer(fichier);
+    //LireDir(fichier,i,&buf); //Lire le bloc  
+    Donnee nouvelle_donnee; //Créer une nouvelle donnée
+    InitialiserDonnee(&nouvelle_donnee); //L'initialiser
+    sprintf(nouvelle_donnee.numero,"%d",num); //Générer le numéro
+    nouvelle_donnee.data = strdup(temp); //Générer l'observation
+
+    sprintf(nouvelle_donnee.taille,"%d",NB_TAILLE+1+35+strlen(nouvelle_donnee.data)); //Calculer la taille
+    char* str = ConcatDonnee(nouvelle_donnee); //Concaténer tous les champs
+    return str;
 }
 
 int len(char * temp){
@@ -458,7 +439,6 @@ int len(char * temp){
     }
     return i;
 }
-
 void insert(Fichier* fichier,char* nom_physique,int numero,char* s)
  {
     Buffer buf;
@@ -511,6 +491,54 @@ void insert(Fichier* fichier,char* nom_physique,int numero,char* s)
     
     free(tmpChar);
     Fermer(&f);
+}
+
+//Procédure pour générer des livrets aléatoires
+void GenererContenuAlea(Fichier* fichier,char* nom_physique,int nb_livret)
+{
+    srand(time(NULL)); //Pour les fonctions aléatoires
+    int i=1; //Se positionner au début du fichier
+    int j=0;
+    Buffer buf;
+    Ouvrir(fichier,nom_physique,'N'); //Ouvrir le fichier en mode nouveau
+    AllocBloc(fichier); //Allouer le premier bloc du fichier
+    for(int k=0;k<nb_livret;k++) //Insérer les livrets un par un
+    {
+        //LireDir(fichier,i,&buf); //Lire le bloc
+        
+        Donnee nouvelle_donnee; //Créer une nouvelle donnée
+        InitialiserDonnee(&nouvelle_donnee); //L'initialiser
+        sprintf(nouvelle_donnee.numero,"%d",k); //Générer le numéro
+        nouvelle_donnee.data = ChaineAlea(10); //Générer l'observation
+
+        sprintf(nouvelle_donnee.taille,"%d",NB_TAILLE+1+35+strlen(nouvelle_donnee.data)); //Calculer la taille
+        char* str = ConcatDonnee(nouvelle_donnee); //Concaténer tous les champs
+        int index = 0;
+        while(index<strlen(str)) //Insérer la donnée caractère par caractère
+        {
+            if(j<B) //Si la position est inférieure à la taille du bloc
+            {
+                buf.tab[j] = str[index]; //Insérer le caractère
+                index+=1;
+                j+=1;
+            }
+            else //Si le caractère doit s'insérer dans le bloc suivant
+            {
+                //buf.tab[j] = '\0';
+                j=0;
+                EcrireDir(fichier,i,&buf); //On écrit le bloc
+                strcpy(buf.tab,"\0");
+                AllocBloc(fichier); //Alloue un nouveau bloc
+                i=Entete(fichier,5); //Met à jour l'adresse i
+                //LireDir(fichier,i,&buf); //Lire le nouveau bloc
+            }
+        }
+        buf.tab[j] = '\0';
+        EcrireDir(fichier,i,&buf); //Ecrit le dernier bloc
+        Aff_entete(fichier,2,Entete(fichier,2)+strlen(str)); //Met à jour le nombre de caractères insérés dans l'entête
+        Aff_entete(fichier,6,j); //Met à jour la dernière position dans la queue dans l'entête
+    }
+    Fermer(fichier);
 }
 
 //Procédure pour afficher le fichier en entier
@@ -585,10 +613,7 @@ void AfficherFichier(Fichier* fichier,char* nom_physique)
     Fermer(fichier);
 }
 
-Fichier f;
-char nom[100];
-double x = STARTX;
-double y = STARTY;
+
 
 gboolean left_to_right = TRUE;
 gboolean top_to_down = FALSE;
@@ -662,14 +687,12 @@ static gboolean draw_enregistrement(GtkWidget *widget, cairo_t *cr, gpointer dat
 
     int block_index = GPOINTER_TO_INT(data);
     Buffer current_block;
-    
-    for (int i = Entete(&f,1); i <= block_index; i++) {
-        LireDir(&f, i, &current_block);
-        if (i > Entete(&f,5)) {
-            return FALSE;
-        }
-        
+           
+    if (block_index > Entete(&f,5)) {
+        return FALSE;
     }
+
+    LireDir(&f, block_index, &current_block);
 
     char *saveptr1=NULL;
     
@@ -686,7 +709,7 @@ static gboolean draw_enregistrement(GtkWidget *widget, cairo_t *cr, gpointer dat
     }
     char *eff;
     eff = strdup("0");
-    while (token != NULL) {
+    while (token != NULL && token[0] != '<') {
         char *saveptr3=NULL;
         char *t = strdup(token);
         if(field_index == 0){
@@ -740,24 +763,20 @@ void update_gui() {
 }
 
 
-
+void on_refresh_button_clicked(GtkWidget *widget, gpointer data) {
+    highlighted_block = -1;
+    highlighted_record = -1;
+    update_gui();
+}
 
 void on_insert_button_clicked(GtkWidget *widget, gpointer data) {
-
-}
-
-
-void on_delete_button_clicked(GtkWidget *widget, gpointer data) {
-
-}
-void on_creation_button_clicked(GtkWidget *widget, gpointer data) {
-    /*GtkWidget *dialog;
+    GtkWidget *dialog;
     GtkWidget *content_area;
-    GtkWidget *entry;
+    GtkWidget *entry, *entry2;
     gint result;
 
     
-    dialog = gtk_dialog_new_with_buttons("le nombre d'enregistrement",
+    dialog = gtk_dialog_new_with_buttons("Insert",
         GTK_WINDOW(gtk_widget_get_toplevel(widget)),
         GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT,
         "OK", GTK_RESPONSE_OK,
@@ -767,23 +786,32 @@ void on_creation_button_clicked(GtkWidget *widget, gpointer data) {
     content_area = gtk_dialog_get_content_area(GTK_DIALOG(dialog));
 
     entry = gtk_entry_new();
-    gtk_entry_set_placeholder_text(GTK_ENTRY(entry), "le nombre");
+    gtk_entry_set_placeholder_text(GTK_ENTRY(entry), "num");
     gtk_container_add(GTK_CONTAINER(content_area), entry);
+    gtk_widget_show_all(dialog);
+    entry2 = gtk_entry_new();
+    gtk_entry_set_placeholder_text(GTK_ENTRY(entry2), "donnee");
+    gtk_container_add(GTK_CONTAINER(content_area), entry2);
     gtk_widget_show_all(dialog);
 
     result = gtk_dialog_run(GTK_DIALOG(dialog));
 
     if (result == GTK_RESPONSE_OK) {
         const char *tmp = gtk_entry_get_text(GTK_ENTRY(entry));
-        strcpy(nom, "ttt");
+        const char *tmp2 = gtk_entry_get_text(GTK_ENTRY(entry2));
         int nb = atoi(tmp);
-        GenererContenuAlea(&f, nom, 30);
-       update_gui();
-
+        
+        insert(&f, nom, nb, GenererContenu(tmp2, nb));
+        Ouvrir(&f, nom, 'A');
+        on_refresh_button_clicked(NULL, NULL);
     }
-    gtk_widget_destroy(dialog);*/
+    gtk_widget_destroy(dialog);
 }
 
+
+void on_delete_button_clicked(GtkWidget *widget, gpointer data) {
+    
+}
 void calculate_block_position(int block_index, double *x, double *y){
     int j = 1;
     int tmp;
@@ -887,7 +915,7 @@ static void draw_highlighted_record(cairo_t *cr, int block_index, int record_ind
     for (int i = Entete(&f,1); i <= block_index; i++) {
         LireDir(&f, i, &current_block);
         if (i > Entete(&f,5)) {
-            return /*FALSE*/;
+            return /*FALSE */;
         }
         
     }
@@ -913,7 +941,7 @@ char *saveptr1=NULL;
     }
     char *eff;
     eff = strdup("0");
-    while (token != NULL) {
+    while (token != NULL && token[0] != '<') {
         char *saveptr3=NULL;
         char *t = strdup(token);
         if(field_index == 0){
@@ -981,11 +1009,7 @@ void highlight_block_and_record(int block_index, int record_index) {
     cairo_destroy(cr);
 }
 
-void on_refresh_button_clicked(GtkWidget *widget, gpointer data) {
-    highlighted_block = -1;
-    highlighted_record = -1;
-    update_gui();
-}
+
 int nb_enr(char *tmp, int indx){
     char *save;
     char *div;
@@ -1249,27 +1273,22 @@ int main(int argc, char* argv[])
     GtkWidget *delete_button = gtk_button_new_with_label("Supprimer");
     GtkWidget *search_button = gtk_button_new_with_label("Rechercher");
     GtkWidget *refresh_button = gtk_button_new_with_label("Refresh");
-    GtkWidget *creation_button = gtk_button_new_with_label("Creation");
 
     g_signal_connect(insert_button, "clicked", G_CALLBACK(on_insert_button_clicked), NULL);
     g_signal_connect(delete_button, "clicked", G_CALLBACK(on_delete_button_clicked), NULL);
     g_signal_connect(search_button, "clicked", G_CALLBACK(on_search_button_clicked), NULL);
     g_signal_connect(refresh_button, "clicked", G_CALLBACK(on_refresh_button_clicked), NULL);
-    g_signal_connect(refresh_button, "clicked", G_CALLBACK(on_creation_button_clicked), NULL);
-
 
     GtkWidget *hbox = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 5);
     gtk_box_pack_start(GTK_BOX(hbox), insert_button, TRUE, TRUE, 0);
     gtk_box_pack_start(GTK_BOX(hbox), delete_button, TRUE, TRUE, 0);
     gtk_box_pack_start(GTK_BOX(hbox), search_button, TRUE, TRUE, 0);
     gtk_box_pack_start(GTK_BOX(hbox), refresh_button, TRUE, TRUE, 0);
-    gtk_box_pack_start(GTK_BOX(hbox), creation_button, TRUE, TRUE, 0);
-
 
     gtk_box_pack_start(GTK_BOX(vbox), hbox, FALSE, FALSE, 0);
     strcpy(nom, "ttt");
-    //GenererContenuAlea(&f, nom, 30);
-    //AfficherFichier(&f, nom);
+    GenererContenuAlea(&f, nom, 30);
+    AfficherFichier(&f, nom);
     Ouvrir(&f, nom, 'A');
     update_gui();
 
