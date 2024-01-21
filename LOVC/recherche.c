@@ -140,7 +140,7 @@ void Ouvrir(Fichier* fichier, char* nom_physique, char mode)
         Aff_entete(fichier,2,0);
         Aff_entete(fichier,3,0);
         Aff_entete(fichier,4,0);
-        Aff_entete(fichier,5,1);
+        Aff_entete(fichier,5,0);
         Aff_entete(fichier,6,0);
         fwrite(&(fichier->entete),sizeof(TypeEntete),1,fichier->fich); //Sauvegarder l'entête dans le fichier
     }
@@ -810,7 +810,80 @@ void on_insert_button_clicked(GtkWidget *widget, gpointer data) {
 
 
 void on_delete_button_clicked(GtkWidget *widget, gpointer data) {
+    GtkWidget *dialog;
+    GtkWidget *content_area;
+    GtkWidget *entry;
+    gint result;
+
+    bool trouv = FALSE;
     
+    dialog = gtk_dialog_new_with_buttons("Supprimer un élément",
+        GTK_WINDOW(gtk_widget_get_toplevel(widget)),
+        GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT,
+        "OK", GTK_RESPONSE_OK,
+        "Annuler", GTK_RESPONSE_CANCEL,
+        NULL);
+
+    content_area = gtk_dialog_get_content_area(GTK_DIALOG(dialog));
+
+    entry = gtk_entry_new();
+    gtk_entry_set_placeholder_text(GTK_ENTRY(entry), "Clef");
+    gtk_container_add(GTK_CONTAINER(content_area), entry);
+    gtk_widget_show_all(dialog);
+
+    result = gtk_dialog_run(GTK_DIALOG(dialog));
+
+    if (result == GTK_RESPONSE_OK) {}
+    on_refresh_button_clicked(NULL, NULL);
+    gtk_widget_destroy(dialog);
+}
+
+void on_creat_button_clicked(GtkWidget *widget, gpointer data) {
+    GtkWidget *dialog;
+    GtkWidget *content_area;
+    GtkWidget *entry;
+    GtkWidget *entry1;
+    gint result;
+
+    
+    dialog = gtk_dialog_new_with_buttons("le nombre d'enregistrement",
+        GTK_WINDOW(gtk_widget_get_toplevel(widget)),
+        GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT,
+        "OK", GTK_RESPONSE_OK,
+        "Annuler", GTK_RESPONSE_CANCEL,
+        NULL);
+
+    content_area = gtk_dialog_get_content_area(GTK_DIALOG(dialog));
+
+    entry1 = gtk_entry_new();
+    gtk_entry_set_placeholder_text(GTK_ENTRY(entry1), "Nom fichier");
+    gtk_container_add(GTK_CONTAINER(content_area), entry1);
+
+    entry = gtk_entry_new();
+    gtk_entry_set_placeholder_text(GTK_ENTRY(entry), "le nombre");
+    gtk_container_add(GTK_CONTAINER(content_area), entry);
+    
+    gtk_widget_show_all(dialog);
+
+    result = gtk_dialog_run(GTK_DIALOG(dialog));
+
+    if(result == GTK_RESPONSE_OK) {
+        const char *tmp = gtk_entry_get_text(GTK_ENTRY(entry));
+        int nb = atoi(tmp);
+        const char *nm = gtk_entry_get_text(GTK_ENTRY(entry1));;
+        if(nm){
+            Fermer(&f);
+            strcpy(nom, nm);
+        }
+        if(nb >= 0)
+            GenererContenuAlea(&f, nom, nb);
+        else
+            GenererContenuAlea(&f, nom, 0);
+        Ouvrir(&f, nom, 'A');
+        update_gui();
+    }
+    on_refresh_button_clicked(NULL, NULL);
+    gtk_widget_destroy(dialog);
 }
 void calculate_block_position(int block_index, double *x, double *y){
     int j = 1;
@@ -1143,8 +1216,8 @@ static gboolean draw_file(GtkWidget *widget, cairo_t *cr, gpointer data) {
     sprintf(tmp, "Nombre blocks : %i", Entete(&f, 4));
     cairo_show_text(cr, tmp);
     cairo_move_to(cr, x_f + 10.0, y_f + 80.0);
-    sprintf(tmp, "nb insert : %i", Entete(&f, 2));
-    cairo_show_text(cr, tmp);
+    //sprintf(tmp, "nb insert : %i", Entete(&f, 2));
+    //cairo_show_text(cr, tmp);
 
     if (Entete(&f, 4)) {
         double arrowStartX = x_f + block_width / 2.0;
@@ -1189,7 +1262,7 @@ static gboolean draw_file(GtkWidget *widget, cairo_t *cr, gpointer data) {
 
     int j = 0;
     Buffer tempb;
-    for (int i = Entete(&f,1); i <= Entete(&f,5); i++) {
+    for (int i = Entete(&f,1); i <= Entete(&f,5) && Entete(&f,5); i++) {
         
     
         if (j % BLOCK_PAR_LIGNE == BLOCK_PAR_LIGNE - 1)
@@ -1272,23 +1345,25 @@ int main(int argc, char* argv[])
     GtkWidget *insert_button = gtk_button_new_with_label("Inserer");
     GtkWidget *delete_button = gtk_button_new_with_label("Supprimer");
     GtkWidget *search_button = gtk_button_new_with_label("Rechercher");
+    GtkWidget *creat_button = gtk_button_new_with_label("Creation");
     GtkWidget *refresh_button = gtk_button_new_with_label("Refresh");
 
     g_signal_connect(insert_button, "clicked", G_CALLBACK(on_insert_button_clicked), NULL);
     g_signal_connect(delete_button, "clicked", G_CALLBACK(on_delete_button_clicked), NULL);
     g_signal_connect(search_button, "clicked", G_CALLBACK(on_search_button_clicked), NULL);
+    g_signal_connect(creat_button, "clicked", G_CALLBACK(on_creat_button_clicked), NULL);
     g_signal_connect(refresh_button, "clicked", G_CALLBACK(on_refresh_button_clicked), NULL);
 
     GtkWidget *hbox = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 5);
     gtk_box_pack_start(GTK_BOX(hbox), insert_button, TRUE, TRUE, 0);
     gtk_box_pack_start(GTK_BOX(hbox), delete_button, TRUE, TRUE, 0);
     gtk_box_pack_start(GTK_BOX(hbox), search_button, TRUE, TRUE, 0);
+    gtk_box_pack_start(GTK_BOX(hbox), creat_button, TRUE, TRUE, 0);
     gtk_box_pack_start(GTK_BOX(hbox), refresh_button, TRUE, TRUE, 0);
 
     gtk_box_pack_start(GTK_BOX(vbox), hbox, FALSE, FALSE, 0);
-    strcpy(nom, "ttt");
-    GenererContenuAlea(&f, nom, 30);
-    AfficherFichier(&f, nom);
+    strcpy(nom, "test");
+    GenererContenuAlea(&f, nom, 0);
     Ouvrir(&f, nom, 'A');
     update_gui();
 
