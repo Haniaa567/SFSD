@@ -410,25 +410,25 @@ if(trouv==0){ //si le numero n'existe pas
     Aff_entete(fichier,6,(Entete(fichier,6)+sauvtaille)%B);//maj de la derniere pos libre de la queue
     
     char* temp_donnee = (char*)malloc((sauvtaille+1)*sizeof(char));//allouer un espace memoire de meme taille que l'eng
-    char* tmp=malloc(sauvtaille+1);
+    char* tmp=malloc(sauvtaille+1);//allouer de l'espace memoire pour pouvoir manipuler donnee entree en paramatere de la fonction
     if (temp_donnee==NULL)
     {
-        printf("allocation failed");
+        printf("allocation failed");//un test pour voir si l'allocation etait faite correctement
     }
     
-    while(stop==0)//boucle d'insertion
+    while(stop==0)//debut de la boucle d'insertion
     {
          LireDir(fichier,i,&buf);//lire le bloc a l'adresse i
 
          if(j+sauvtaille<=B)//si l'espace est suffisant pour inserer l'eng
          {
-            for(int k=0;k<sauvtaille;k++)
+            for(int k=0;k<sauvtaille;k++)//boucle de decalage
             {
                 temp_donnee[k] = buf.tab[j+k];//on sauvegarde le caractere qui se trouve ou on veut insere notre eng
                 buf.tab[j+k] = donnee[k];//on insere un caractere de notre enregistrement
 
             }
-            temp_donnee[sauvtaille] = '\0';
+            temp_donnee[sauvtaille] = '\0';//terminer la donnee par un caractere nul
             EcrireDir(fichier,i,&buf);//ecrire le bloc
             j+=sauvtaille; //on avance la position
             strncpy(tmp,temp_donnee,sauvtaille-1);//copier les caracteres sauvegardees dans la donnee temp dans la donnee qu'on est entrain d'inserer
@@ -469,7 +469,7 @@ if(trouv==0){ //si le numero n'existe pas
 
          if((i == Entete(fichier,5))&&(j>Entete(fichier,6)))//si on arrive au dernier bloc et derniere position on arrete l'insertion
          {
-            stop = 1; 
+            stop = 1; //insertion terminee
          }
 
     }
