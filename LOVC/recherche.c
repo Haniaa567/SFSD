@@ -58,6 +58,7 @@ struct Fichier{
     TypeEntete entete; //Le champ de l'entete
     FILE* fich; //Le fichier
 };
+
 Fichier f;
 //Implementation de la machine abstraite ========================================================================================
 //Renvoie pour chaque numero le champ de l'entete qui correspond
