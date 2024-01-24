@@ -60,6 +60,7 @@ struct Fichier{
     TypeEntete entete; //Le champ de l'entete
     FILE* fich; //Le fichier
 };
+
 Fichier f;
 
 //Renvoie pour chaque numero le champ de l'entete qui correspond

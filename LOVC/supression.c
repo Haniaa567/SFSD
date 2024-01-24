@@ -1,24 +1,11 @@
+#define B 100 //Doit etre au moins 36 + NB_TAILLE
+#define NB_TAILLE 6
 #include<stdio.h>
 #include<stdlib.h>
 #include<stdbool.h>
 #include<string.h>
 //#include <gtk/gtk.h>
 #include <time.h>
-#define B 100 
-#define NB_TAILLE 6
-
-#define block_width 500.0
-#define block_height 180.0
-#define field_width 80.0
-#define field_height 20.0
-#define CELL_SPACING 85.0
-#define BLOCK_PAR_LIGNE 4
-#define STARTX 100
-#define STARTY 300
-//GtkWidget *window;
-//GtkWidget *drawing_area;
-
-
 //Declaration des strucures de types ==================================================================================>
 //Type de l'enregistrement
 typedef struct Donnee Donnee;
@@ -35,7 +22,6 @@ struct TBloc{
     char tab[B]; //Un tableau de taille B qui contient les enregistrements
     int suivant; //Un champ pour l'adresse du suivant bloc
 };
-
 
 //Type de l'entete
 typedef struct TypeEntete TypeEntete;
@@ -55,6 +41,7 @@ struct Fichier{
     FILE* fich; //Le fichier
 };
 
+Fichier f;
 //Implementation de la machine abstraite ========================================================================================
 //Renvoie pour chaque numero le champ de l'entete qui correspond
 int Entete(Fichier* fichier,int i)
@@ -120,7 +107,7 @@ void LireDir(Fichier* fichier, int i, Buffer* buf)
 //Ecrire le bloc à l'adresse i
 void EcrireDir(Fichier* fichier, int i, Buffer* buf)
 { 
-    buf->tab[B-1] = '\0';
+    buf->tab[sizeof(buf->tab)] = '\0';
     fseek(fichier->fich,(sizeof(TypeEntete)+sizeof(Buffer)*(i-1)),SEEK_SET); //Positionner le curseur à l'adresse i
     fwrite(buf,sizeof(Buffer),1,fichier->fich); //Ecrire le bloc
 }
@@ -136,7 +123,7 @@ void Ouvrir(Fichier* fichier, char* nom_physique, char mode)
         Aff_entete(fichier,2,0);
         Aff_entete(fichier,3,0);
         Aff_entete(fichier,4,0);
-        Aff_entete(fichier,5,1);
+        Aff_entete(fichier,5,0);
         Aff_entete(fichier,6,0);
         fwrite(&(fichier->entete),sizeof(TypeEntete),1,fichier->fich); //Sauvegarder l'entête dans le fichier
     }
@@ -153,6 +140,7 @@ void Ouvrir(Fichier* fichier, char* nom_physique, char mode)
 //Ferme le fichier
 void Fermer(Fichier* fichier)
 {
+    fflush(fichier->fich);
     fseek(fichier->fich,0,SEEK_SET); //Positionne le curseur au début du fichier
     fwrite(&(fichier->entete),sizeof(TypeEntete),1,fichier->fich); //Sauvegarde l'entête
     fclose(fichier->fich); //Ferme le fichier
@@ -225,10 +213,10 @@ char* ConcatDonnee(Donnee d)
 void RecupChamp(Fichier* fichier,int n,Buffer* buf,int* i,int* j,char* donnee)
 {
     int k = 0;
-   
-    while(*j < B && buf->tab[*j] != '#')
+    
+    while(buf->tab[*j] != '#')
     {
-        //printf("\nbbb %s\n", buf->tab);
+        //printf("\nbbb %s %i\n", buf->tab, *j);
         if(*j>=sizeof(buf->tab)) //En cas où le champ est divisé sur plus d'un bloc
         {   
             (*i)+=1;
@@ -247,12 +235,11 @@ void RecupChamp(Fichier* fichier,int n,Buffer* buf,int* i,int* j,char* donnee)
     donnee[k] = '\0';
 }
 
-
 //Récupère la chaine du fichier comme elle est sans enlever les séparateurs
 void RecupChaine(Fichier* fichier,int n,Buffer* buf,int* i,int* j,char donnee[])
 {
     int k = 0;
-    while(*j < B && buf->tab[*j] != '#' && buf->tab[*j] != '$')
+    while(buf->tab[*j] != '#')
     {
         
         if(*j>=sizeof(buf->tab)) //En cas où la chaine est divisée sur plus d'un bloc
@@ -261,13 +248,11 @@ void RecupChaine(Fichier* fichier,int n,Buffer* buf,int* i,int* j,char donnee[])
             *j = 0; //Rénitiliser le j à 0 (au début du nouveau bloc)
             LireDir(fichier,*i,buf);
         }
-        
         //printf("\nbbb %c\n", buf->tab[*j]);
         donnee[k] = buf->tab[*j];
         (*j)+=1;
         k+=1;
     }
-    donnee[k] = '\0';
     (*j)+=1;
     if(buf->tab[*j] == '$')
         (*j)+=1;
@@ -275,7 +260,6 @@ void RecupChaine(Fichier* fichier,int n,Buffer* buf,int* i,int* j,char donnee[])
         (*j)+=1;
     donnee[k] = '\0';
 }
-
 
 //Ecrie la chaine de caractères de taille n à la fin d'un fichier à partir de l'adresse i et la position j
 void EcrireChaine(Fichier* fichier,char* nom_physique,int n,Buffer* buf,int* i,int* j,char donnee[])
@@ -287,10 +271,16 @@ void EcrireChaine(Fichier* fichier,char* nom_physique,int n,Buffer* buf,int* i,i
     {
         if(*j>=B) //Si la chaine dépasse la capacité du bloc
         {
-            EcrireDir(fichier,*i,buf); //Ecrire le bloc à l'adresse i
-            AllocBloc(fichier); //Allouer un nouveau bloc à la fin du fichier et le chainer
-            *i = Entete(fichier,5); //Mettre à jour i à l'adresse de la queue de la liste
             *j = 0; //Réinitialiser j à 0
+            EcrireDir(fichier,*i,buf);
+            if((*i)+1>Entete(&f,5)){
+                AllocBloc(fichier); //Allouer un nouveau bloc à la fin du fichier et le chainer
+                *i = Entete(fichier,5); //Mettre à jour i à l'adresse de la queue de la liste
+                
+            }else{
+
+                (*i)++;
+            }
             LireDir(fichier,*i,buf); //Lire le nouveau bloc
         }
         buf->tab[*j] = donnee[k]; //Mettre à jour un caractère du buffer avec un caractère de la chaine qu'on veut écrire
@@ -298,12 +288,18 @@ void EcrireChaine(Fichier* fichier,char* nom_physique,int n,Buffer* buf,int* i,i
         k+=1;
     }
     donnee[k] = '\0';
+    int l = *j;
+    while (l<B){
+        buf->tab[l] = '<';
+        l++;
+    }
     EcrireDir(fichier,*i,buf); //Ecrire le bloc à l'adresse i
     Aff_entete(fichier,6,*j); //Mettre à jour la dernière position libre dans la queue
     Aff_entete(fichier,2,Entete(fichier,2)+n); //Mettre à jour le nombre de caractères insérés
     Fermer(fichier); //Fermer le fichier
 }
 
+//Une fonction pour demander à l'utilisateur d'entrer chaque champ manuellement et les concaténer en une chaine de caractères
 char* EntrerDonnee(int numero)
 {
     Donnee d; //Déclarer d comme enregistrement
@@ -311,15 +307,13 @@ char* EntrerDonnee(int numero)
     sprintf(d.numero,"%d",numero); //Affecter numero(entier) à d.numero(chaine de caractères)
     printf("\t\t\tEntrez data (sans espaces): ");
     d.data = (char*)malloc(sizeof(char)*250);
+    d.data[0] = '\0';
     scanf("%s",d.data); //Lire le champ observation
     sprintf(d.taille,"%d",NB_TAILLE+1+35+strlen(d.data));
     return ConcatDonnee(d); //Retouner les champs concaténés
 }
-
-
-
-
 void RechercheLOVC(Fichier* fichier,char* nom_physique,int val,int* i,int* j,int* trouv, int *index)
+
 {
     Buffer buf; //Pour lire et écrire les blocs
     int stop; //Pour stopper la boucle dans certaines conditions
@@ -337,6 +331,8 @@ void RechercheLOVC(Fichier* fichier,char* nom_physique,int val,int* i,int* j,int
     stop = 0; //Positionner stop à Faux
     *i = Entete(fichier,1);
     *j = 0;
+    if(index)
+    *index = 0;
     LireDir(fichier,*i,&buf); //Lire le premier bloc
 
     //Le cas d'un fichier vide
@@ -344,14 +340,12 @@ void RechercheLOVC(Fichier* fichier,char* nom_physique,int val,int* i,int* j,int
     {
         stop = 1; //stop à Vrai
     }
-
+    //gtk_widget_queue_draw(drawing_area);
+    //cairo_t *cr;
+    //cr = gdk_cairo_create(gtk_widget_get_window(drawing_area));
     while((*trouv == 0)&&(stop == 0)) //Tant qu'on a pas trouvé le livret et que aucune condition n'a été vérifiée pour stopper la boucle
     {
-        if(index){
-            (*index)++;
-            //highlight_block_and_record(*i, *index);
-            //for(int l = 0; l<100000000; l++);
-        }
+       
         sauvi = *i; //Sauvegarder i
         sauvj = *j; //Sauvegarder j
         RecupChamp(fichier,NB_TAILLE,&buf,i,j,taille); //sa le champ taille (le i et j sont mis à jour après le champ)
@@ -361,6 +355,7 @@ void RechercheLOVC(Fichier* fichier,char* nom_physique,int val,int* i,int* j,int
         nb_numero = atoi(numero); //Récupérer le champ en tant qu'entier
         d = malloc(sizeof(char)*(nb_taille-NB_TAILLE-10));
         RecupChaine(fichier,nb_taille-NB_TAILLE-11,&buf,i,j,d); //Récupérer le reste de l'enregistrement
+        
 
         if(nb_numero == val) //Le meme numéro a été trouvé
         {
@@ -380,6 +375,17 @@ void RechercheLOVC(Fichier* fichier,char* nom_physique,int val,int* i,int* j,int
                 *j = sauvj; //Récupérer j avant d'avoir lu cet enregistrement
             }
         }
+        if(index){
+            if(*i == sauvi)
+                (*index)++;
+            else if(*i > sauvi)
+                *index = 0;
+            
+            //highlighted_block = *i;
+            //highlighted_record = *index;
+            //draw_file(NULL, cr, NULL);  
+            //for(int l = 0; l<100000000; l++);
+        }
         if((*j>=Entete(fichier,6))&&(*i>=Entete(fichier,5))) //Si on arrive à la fin du fichier
         {
             stop = 1; //stop à Vrai
@@ -387,104 +393,135 @@ void RechercheLOVC(Fichier* fichier,char* nom_physique,int val,int* i,int* j,int
 
         free(d); //On libère l'espace
     }
+    //cairo_destroy(cr);
     //Fermer(fichier); //Fermer le fichier
 }
 
-// cette procedure insere un nouveau livret d'apres le numero donnee
-void InsertionLOVC(Fichier* fichier,char* nom_physique,int numero,char* donnee)
+char * GenererContenu(char* temp, int num)
 {
-Buffer buf;
-int trouv;
-int stop=0;
-int i=1;
-int j=0;
-int l=0;
-int rest;
 
-RechercheLOVC(fichier,nom_physique,numero,&i,&j,&trouv, NULL); //On effectue une recherche pour avoir l'adresse i et la position j où insérer
+    //LireDir(fichier,i,&buf); //Lire le bloc  
+    Donnee nouvelle_donnee; //Créer une nouvelle donnée
+    InitialiserDonnee(&nouvelle_donnee); //L'initialiser
+    sprintf(nouvelle_donnee.numero,"%d",num); //Générer le numéro
+    nouvelle_donnee.data = strdup(temp); //Générer l'observation
 
-if(trouv==0){ //si le numero n'existe pas
-    Ouvrir(fichier,nom_physique,'A'); //on ouvre le fichier
-    int sauvtaille = strlen(donnee);//on sauvegarde la taille du nv enregistrement
-    Aff_entete(fichier,2,Entete(fichier,2)+sauvtaille);//maj de nb de caracteres inseres
-    Aff_entete(fichier,6,(Entete(fichier,6)+sauvtaille)%B);//maj de la derniere pos libre de la queue
+    sprintf(nouvelle_donnee.taille,"%d",NB_TAILLE+1+35+strlen(nouvelle_donnee.data)); //Calculer la taille
+    char* str = ConcatDonnee(nouvelle_donnee); //Concaténer tous les champs
+    return str;
+}
+
+int len(char * temp){
+    int i =0;
     
-    char* temp_donnee = (char*)malloc((sauvtaille+1)*sizeof(char));//allouer un espace memoire de meme taille que l'eng
-    char* tmp=malloc(sauvtaille+1);//allouer de l'espace memoire pour pouvoir manipuler donnee entree en paramatere de la fonction
-    if (temp_donnee==NULL)
-    {
-        printf("allocation failed");//un test pour voir si l'allocation etait faite correctement
+    while(temp[i] != '<' && temp[i] != '\0'){
+        i++;
     }
-    
-    while(stop==0)//debut de la boucle d'insertion
-    {
-         LireDir(fichier,i,&buf);//lire le bloc a l'adresse i
+    return i;
+}
+void insert(Fichier* fichier,char* nom_physique,int numero,char* s)
+ {
+    Buffer buf;
+    int trouv;
+    int stop = 0;
+    int i = 1;
+    int j = 0;
+    int l = 0;
+    int rest;
 
-         if(j+sauvtaille<=B)//si l'espace est suffisant pour inserer l'eng
-         {
-            for(int k=0;k<sauvtaille;k++)//boucle de decalage
+    char *tmpChar = malloc(B * (Entete(fichier, 5) + 1));
+    tmpChar[0] = '\0';
+
+    RechercheLOVC(fichier,nom_physique,numero,&i,&j,&trouv, NULL); //On effectue une recherche pour avoir l'adresse i et la position j où insérer
+    if (trouv)
+    {
+        printf("This student already exists\n");
+        return;
+    }
+
+    int bloc = i;
+    int charpos = j;
+    int sauvi = i;
+    int sauvj = j;
+
+    int k = j;
+    j = 0;
+    
+
+    while (i <= Entete(fichier, 5))
+    {
+        int l = k;
+        LireDir(fichier, i, &buf);
+        int ll = len(buf.tab);
+        
+        for ( l; l < ll; l++)
+        {
+            tmpChar[j++] = buf.tab[l];
+        }
+        i++;
+        k = 0;
+     }
+
+    tmpChar[j] = '\0';
+    LireDir(fichier, sauvi, &buf);
+    j = 0;
+    EcrireChaine(fichier, nom_physique, strlen(s), &buf, &sauvi, &sauvj, s);
+    if(tmpChar[0] != '\0')
+        EcrireChaine(fichier, nom_physique, strlen(tmpChar), &buf, &sauvi, &sauvj, tmpChar);
+    
+    free(tmpChar);
+    Fermer(&f);
+}
+
+//Procédure pour générer des livrets aléatoires
+void GenererContenuAlea(Fichier* fichier,char* nom_physique,int nb_livret)
+{
+    srand(time(NULL)); //Pour les fonctions aléatoires
+    int i=1; //Se positionner au début du fichier
+    int j=0;
+    Buffer buf;
+    Ouvrir(fichier,nom_physique,'N'); //Ouvrir le fichier en mode nouveau
+    AllocBloc(fichier); //Allouer le premier bloc du fichier
+    for(int k=0;k<nb_livret;k++) //Insérer les livrets un par un
+    {
+        //LireDir(fichier,i,&buf); //Lire le bloc
+        
+        Donnee nouvelle_donnee; //Créer une nouvelle donnée
+        InitialiserDonnee(&nouvelle_donnee); //L'initialiser
+        sprintf(nouvelle_donnee.numero,"%d",k); //Générer le numéro
+        nouvelle_donnee.data = ChaineAlea(10); //Générer l'observation
+
+        sprintf(nouvelle_donnee.taille,"%d",NB_TAILLE+1+35+strlen(nouvelle_donnee.data)); //Calculer la taille
+        char* str = ConcatDonnee(nouvelle_donnee); //Concaténer tous les champs
+        int index = 0;
+        while(index<strlen(str)) //Insérer la donnée caractère par caractère
+        {
+            if(j<B) //Si la position est inférieure à la taille du bloc
             {
-                temp_donnee[k] = buf.tab[j+k];//on sauvegarde le caractere qui se trouve ou on veut insere notre eng
-                buf.tab[j+k] = donnee[k];//on insere un caractere de notre enregistrement
-
+                buf.tab[j] = str[index]; //Insérer le caractère
+                index+=1;
+                j+=1;
             }
-            temp_donnee[sauvtaille] = '\0';//terminer la donnee par un caractere nul
-            EcrireDir(fichier,i,&buf);//ecrire le bloc
-            j+=sauvtaille; //on avance la position
-            strncpy(tmp,temp_donnee,sauvtaille-1);//copier les caracteres sauvegardees dans la donnee temp dans la donnee qu'on est entrain d'inserer
-           tmp[sauvtaille] = '\0'; 
-         }else{//si l'espace n'est pas suffisant
-
-             rest = j+sauvtaille - B; //le nombre de caracteres qui va etre inserer dans le bloc suivant
-              l = 0;
-              while(j<B)//insertion des caracteres jusqu'a la fin du bloc
-              {
-                    temp_donnee[l] = buf.tab[j];
-                    buf.tab[j] = donnee[l];
-                    j++;
-                    l++;
-              }
-              EcrireDir(fichier,i,&buf);//ecrire le bloc
-              i = buf.suivant;//on passe au prochain bloc
-              j=0;
-              if(i==-1)//si le bloc courant etait le dernier bloc
-              {
-                 AllocBloc(fichier);//on alloue un nouveau bloc
-                 i = Entete(fichier,5);//maj de l'adresse de la queue
-                stop = 1;//on arrete l'insertion car c'est le dernier bloc
-              }
-              LireDir(fichier,i,&buf);//on lis le nouveau bloc
-              for(int k=0;k<rest;k++)//on insere les caracteres restantes dans le nouveau bloc
-              {
-                    temp_donnee[l] = buf.tab[j];
-                    buf.tab[j] = donnee[l];
-                    j++;
-                    l++;
-
-              }
-              temp_donnee[strlen(donnee)] = '\0';
-              EcrireDir(fichier,i,&buf);//ecrire le bloc
-              strncpy(tmp,temp_donnee,sauvtaille);
-         }
-
-         if((i == Entete(fichier,5))&&(j>Entete(fichier,6)))//si on arrive au dernier bloc et derniere position on arrete l'insertion
-         {
-            stop = 1; //insertion terminee
-         }
-
+            else //Si le caractère doit s'insérer dans le bloc suivant
+            {
+                //buf.tab[j] = '\0';
+                j=0;
+                EcrireDir(fichier,i,&buf); //On écrit le bloc
+                strcpy(buf.tab,"\0");
+                AllocBloc(fichier); //Alloue un nouveau bloc
+                i=Entete(fichier,5); //Met à jour l'adresse i
+                //LireDir(fichier,i,&buf); //Lire le nouveau bloc
+            }
+        }
+        buf.tab[j] = '\0';
+        EcrireDir(fichier,i,&buf); //Ecrit le dernier bloc
+        Aff_entete(fichier,2,Entete(fichier,2)+strlen(str)); //Met à jour le nombre de caractères insérés dans l'entête
+        Aff_entete(fichier,6,j); //Met à jour la dernière position dans la queue dans l'entête
     }
-        free(temp_donnee);
-        Fermer(fichier);
-
-
-
-
-}
-else{
-    printf("insertion impossible,le numero existe deja!");// si le  numero existe deja
-}
+    Fermer(fichier);
 }
 
+//Procédure pour afficher le fichier en entier
 void AfficherFichier(Fichier* fichier,char* nom_physique)
 {
     Buffer buf;
@@ -555,17 +592,84 @@ void AfficherFichier(Fichier* fichier,char* nom_physique)
     }
     Fermer(fichier);
 }
-
-int main()
+void SuppressionLogiqueLOVC(Fichier* fichier,char* nom_physique,int numero)
 {
-    Fichier f;
-    Ouvrir(&f,"test",'n');
-    InsertionLOVC(&f,"test",0,"abcdefghij");
-    InsertionLOVC(&f,"test",1,"abcdefghik");
-    InsertionLOVC(&f,"test",2,"abcdefghij");
-    InsertionLOVC(&f,"test",3,"abcdefghij");
+    int trouv;
+    int i,j;
+   
+    RechercheLOVC(fichier,nom_physique,numero,&i,&j,&trouv, NULL); //On effectue d'abord une recherche
+    if(trouv == 1) //Si le livret a été trouvé
+    {
+        int nb_taille;
+        Buffer buf;
+        char taille[NB_TAILLE];
+        Ouvrir(fichier,nom_physique,'A'); //On ouvre le fichier en mode ancien , il existe deja
+        LireDir(fichier,i,&buf); //lire le bloc dans buf
+        RecupChamp(fichier,NB_TAILLE,&buf,&i,&j,taille);  //On récupère le champ taille
+        nb_taille = atoi(taille); //On le convertit en entier
+        // cas 1 : la position du champ eff est dans le bloc courant
+        if(j<B) 
+        {
+            buf.tab[j] = '1'; //On met à jour le champ à 1 ce qui signifie que la donnée a été effacé
+            EcrireDir(fichier,i,&buf); //Ecrire le bloc
+        }
+        // cas 2 : la position du champ eff est dans le bloc suivant
+        else 
+        {
+            i = buf.suivant; //On passe au bloc suivant
+            if(i == -1) //S'il n'existe pas c'est une erreur de conception dans la strcture
+            {
+                printf("\t\t\tERREUR: Le champ efface n'existe pas\n");
+            }
+            else
+            {
+                LireDir(fichier,i,&buf); //On lie ce bloc
+                buf.tab[B-j] = '1'; //On met à jour le champ à 1 ce qui signifie que la donnée a été effacé
+                EcrireDir(fichier,i,&buf); //On écrit le bloc
+            }
+        }
+        Aff_entete(fichier,3,Entete(fichier,3)+nb_taille); //On met à jour le champ (nombre de caractères supprimés) de l'entête
+    }
+    else //Si le livret n'a pas été trouvé
+    {
+        printf("\t\t\tLe livret que vous voulez supprimer n'existe pas\n");
+    }
 
-    AfficherFichier(&f,"test");
-    
+    /*if(automatic == 1) //Si la réorganisation automatique était activée
+    {
+        Fichier fichier2;
+        if((float)Entete(fichier,3)/(float)Entete(fichier,2)>=seuil) //Si le seuil a été atteint ((nombre de caractères supprimés/nombre de caractères insérés)>=seuil)
+        {
+            Reorganisation(fichier,&fichier2,nom_physique,"Reo_Livrets_National.bin");
+            printf("\t\t\tReorganisation effectuee !\n");
+        }
+    }*/
+    Fermer(fichier);
+}
+
+
+
+
+int main() {
+    // Test de création d'un nouveau fichier
+    Fichier f;
+    Ouvrir(&f, "test", 'N');
+
+    // Test de génération de données aléatoires
+    GenererContenuAlea(&f, "test",147);
+
+    // Test d'affichage du fichier
+    printf("Contenu du fichier avant l'insertion :\n");
+    AfficherFichier(&f, "test");
+    // Test de supression 
+    printf("apres supression\n");
+    SuppressionLogiqueLOVC(&f,"test",146);
+    AfficherFichier(&f, "test");
+
+
+    // Fermeture du fichier
+    Fermer(&f);
+
+
     return 0;
 }
