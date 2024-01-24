@@ -30,7 +30,7 @@ double y = STARTY;
 //Type de l'enregistrement
 typedef struct Donnee Donnee;
 struct Donnee{
-    char numero[100]; //Le numéro on l'utilise comme cle
+    char numero[10]; //Le numéro on l'utilise comme cle
     char* data; //Observation: Un champ de taille variable
     char taille[NB_TAILLE]; //Un champ pour sauvegarder la taille de l'enregistrement
     char eff; //Un champ qui à 0 signifie que l'enregistrement n'est pas supprimé et à 1 dans le cas contraire
@@ -256,6 +256,7 @@ void RecupChamp(Fichier* fichier,int n,Buffer* buf,int* i,int* j,char* donnee)
 }
 
 //Récupère la chaine du fichier comme elle est sans enlever les séparateurs
+//i bloc j pos
 void RecupChaine(Fichier* fichier,int n,Buffer* buf,int* i,int* j,char donnee[])
 {
     int k = 0;
@@ -333,7 +334,7 @@ char* EntrerDonnee(int numero)
 }
 static gboolean draw_file(GtkWidget *widget, cairo_t *cr, gpointer data) ;
 //Operations sur LOVC ==============================================================================================================================
-//Cette procédure recherche un livret dans le fichier d'après le numéro
+//Cette procédure recherche un numero dans le fichier d'après le numéro
 //i: l'adresse du bloc et j: la position dans le bloc
 //(i,j) représentent l'emplacement du livret s'il existe sinon où il est supposé placé
 void RechercheLOVC(Fichier* fichier,char* nom_physique,int val,int* i,int* j,int* trouv, int *index)
@@ -363,9 +364,10 @@ void RechercheLOVC(Fichier* fichier,char* nom_physique,int val,int* i,int* j,int
     {
         stop = 1; //stop à Vrai
     }
-    gtk_widget_queue_draw(drawing_area);
-    cairo_t *cr;
-    cr = gdk_cairo_create(gtk_widget_get_window(drawing_area));
+    gtk_widget_queue_draw(drawing_area);//redessin du widget GTK
+    cairo_t *cr;//contexte de dessin.
+    cr = gdk_cairo_create(gtk_widget_get_window(drawing_area));//obtenir un contexte de dessin Cairo 
+
     while((*trouv == 0)&&(stop == 0)) //Tant qu'on a pas trouvé le livret et que aucune condition n'a été vérifiée pour stopper la boucle
     {
        
@@ -382,10 +384,10 @@ void RechercheLOVC(Fichier* fichier,char* nom_physique,int val,int* i,int* j,int
 
         if(nb_numero == val) //Le meme numéro a été trouvé
         {
-            if(eff == '0') //Le livret n'est pas effecé donc il a été trouvé
+            if(eff == '0') //il n'est pas effecé donc il a été trouvé
                 *trouv = 1; //trouv à Vrai
             else
-                stop = 1; //Le livret a été supprimé donc on met stop à Vrai
+                stop = 1; //io a été supprimé donc on met stop à Vrai
             *i = sauvi; //Récupérer i avant d'avoir lu cet enregistrement
             *j = sauvj; //Récupérer j avant d'avoir lu cet enregistrement
         }
@@ -427,8 +429,7 @@ char * GenererContenu(char* temp, int num)
     Donnee nouvelle_donnee; //Créer une nouvelle donnée
     InitialiserDonnee(&nouvelle_donnee); //L'initialiser
     sprintf(nouvelle_donnee.numero,"%d",num); //Générer le numéro
-    nouvelle_donnee.data = strdup(temp); //Générer l'observation
-
+    nouvelle_donnee.data = strdup(temp); //Générer la donnee
     sprintf(nouvelle_donnee.taille,"%d",NB_TAILLE+1+35+strlen(nouvelle_donnee.data)); //Calculer la taille
     char* str = ConcatDonnee(nouvelle_donnee); //Concaténer tous les champs
     return str;
@@ -458,7 +459,7 @@ void insert(Fichier* fichier,char* nom_physique,int numero,char* s)
     RechercheLOVC(fichier,nom_physique,numero,&i,&j,&trouv, NULL); //On effectue une recherche pour avoir l'adresse i et la position j où insérer
     if (trouv)
     {
-        printf("This student already exists\n");
+        printf("il existe\n");
         return;
     }
 
