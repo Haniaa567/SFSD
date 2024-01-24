@@ -6,7 +6,7 @@
 //#include <time.h>
 #define B 100 //Doit etre au moins 36 + NB_TAILLE
 #define NB_TAILLE 6//la taille de l'enregistrement ne vas pas depase 6 chiffres
-//pour les calcules de la visualisation 
+//pour les calcules de la visualisation,
 #define block_width 500.0
 #define block_height 180.0
 #define field_width 80.0
