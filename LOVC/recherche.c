@@ -3,10 +3,10 @@
 #include<stdbool.h>
 #include<string.h>
 #include <gtk/gtk.h>
-#include <time.h>
+//#include <time.h>
 #define B 100 //Doit etre au moins 36 + NB_TAILLE
-#define NB_TAILLE 6
-
+#define NB_TAILLE 6//la taille de l'enregistrement ne vas pas depase 6 chiffres
+//pour les calcules de la visualisation 
 #define block_width 500.0
 #define block_height 180.0
 #define field_width 80.0
@@ -15,9 +15,11 @@
 #define BLOCK_PAR_LIGNE 2
 #define STARTX 100
 #define STARTY 300
-GtkWidget *window;
-GtkWidget *drawing_area;
-int highlighted_block = -1;
+
+GtkWidget *window;// la fenetre
+GtkWidget *drawing_area;// zone de dessin 
+
+int highlighted_block = -1;//par defaut 
 int highlighted_record = -1;
 
 char nom[100];
@@ -28,7 +30,7 @@ double y = STARTY;
 //Type de l'enregistrement
 typedef struct Donnee Donnee;
 struct Donnee{
-    char numero[100]; //Le numéro du livret sur 10 caratères
+    char numero[100]; //Le numéro on l'utilise comme cle
     char* data; //Observation: Un champ de taille variable
     char taille[NB_TAILLE]; //Un champ pour sauvegarder la taille de l'enregistrement
     char eff; //Un champ qui à 0 signifie que l'enregistrement n'est pas supprimé et à 1 dans le cas contraire
@@ -59,7 +61,7 @@ struct Fichier{
     FILE* fich; //Le fichier
 };
 Fichier f;
-//Implementation de la machine abstraite ========================================================================================
+
 //Renvoie pour chaque numero le champ de l'entete qui correspond
 int Entete(Fichier* fichier,int i)
 {
@@ -157,7 +159,7 @@ void Ouvrir(Fichier* fichier, char* nom_physique, char mode)
 //Ferme le fichier
 void Fermer(Fichier* fichier)
 {
-    fflush(fichier->fich);
+    fflush(fichier->fich);//vide le tampon associé au flux de fichie
     fseek(fichier->fich,0,SEEK_SET); //Positionne le curseur au début du fichier
     fwrite(&(fichier->entete),sizeof(TypeEntete),1,fichier->fich); //Sauvegarde l'entête
     fclose(fichier->fich); //Ferme le fichier
@@ -177,7 +179,7 @@ void AllocBloc(Fichier* fichier)
     Aff_entete(fichier,5,Entete(fichier,4)); //Mettre à jour le champ qui correspond à l'adresse du dernier bloc de la liste
 }
 
-//Outils utilisés
+//Outils utilisés pour la creation 
 char* ChaineAlea(int taille)
 {
     char* alpha = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789,.-'?!"; //Une chaine qui contient tous les caractères possibles
