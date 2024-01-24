@@ -320,18 +320,6 @@ void EcrireChaine(Fichier* fichier,char* nom_physique,int n,Buffer* buf,int* i,i
     Fermer(fichier); //Fermer le fichier
 }
 
-//Une fonction pour demander à l'utilisateur d'entrer chaque champ manuellement et les concaténer en une chaine de caractères
-char* EntrerDonnee(int numero)
-{
-    Donnee d; //Déclarer d comme enregistrement
-    InitialiserDonnee(&d); //Initialiser les champs de d
-    sprintf(d.numero,"%d",numero); //Affecter numero(entier) à d.numero(chaine de caractères)
-    printf("\t\t\tEntrez data (sans espaces): ");
-    d.data = (char*)malloc(sizeof(char)*250);
-    scanf("%s",d.data); //Lire le champ observation
-    sprintf(d.taille,"%d",NB_TAILLE+1+35+strlen(d.data));
-    return ConcatDonnee(d); //Retouner les champs concaténés
-}
 static gboolean draw_file(GtkWidget *widget, cairo_t *cr, gpointer data) ;
 //Operations sur LOVC ==============================================================================================================================
 //Cette procédure recherche un numero dans le fichier d'après le numéro
@@ -400,6 +388,7 @@ void RechercheLOVC(Fichier* fichier,char* nom_physique,int val,int* i,int* j,int
                 *j = sauvj; //Récupérer j avant d'avoir lu cet enregistrement
             }
         }
+        //affiche pa a pas qui peut ne pas marcher
         if(index){
             if(*i == sauvi)
                 (*index)++;
@@ -454,7 +443,7 @@ void insert(Fichier* fichier,char* nom_physique,int numero,char* s)
     int l = 0;
     int rest;
 
-    char *tmpChar = malloc(B * (Entete(fichier, 5) + 1));
+    char *tmpChar = malloc(B * (Entete(fichier, 5) + 1));//alouer la taille de bloc
     tmpChar[0] = '\0';
 
     RechercheLOVC(fichier,nom_physique,numero,&i,&j,&trouv, NULL); //On effectue une recherche pour avoir l'adresse i et la position j où insérer
@@ -498,8 +487,8 @@ void insert(Fichier* fichier,char* nom_physique,int numero,char* s)
     Fermer(&f);
 }
 
-//Procédure pour générer des livrets aléatoires
-void GenererContenuAlea(Fichier* fichier,char* nom_physique,int nb_livret)
+//Procédure pour générer des donnees aléatoires
+void GenererContenuAlea(Fichier* fichier,char* nom_physique,int nb_id)
 {
     srand(time(NULL)); //Pour les fonctions aléatoires
     int i=1; //Se positionner au début du fichier
@@ -507,7 +496,7 @@ void GenererContenuAlea(Fichier* fichier,char* nom_physique,int nb_livret)
     Buffer buf;
     Ouvrir(fichier,nom_physique,'N'); //Ouvrir le fichier en mode nouveau
     AllocBloc(fichier); //Allouer le premier bloc du fichier
-    for(int k=0;k<nb_livret;k++) //Insérer les livrets un par un
+    for(int k=0;k<nb_id;k++) //Insérer les id un par un
     {
         //LireDir(fichier,i,&buf); //Lire le bloc
         
@@ -556,7 +545,7 @@ void AfficherFichier(Fichier* fichier,char* nom_physique)
     char eff;
     char* d;
     char* donnee;
-    char num[100];
+    char num[10];
     index = 0;
     int stop = 0;
     Ouvrir(fichier,nom_physique,'A'); //Ouvrir le fichier en mode ancien
@@ -637,12 +626,12 @@ static gboolean draw_block(GtkWidget *widget, cairo_t *cr, gpointer data) {
 
 
     cairo_rectangle(cr, x, y, block_width, block_height +  field_width);
-    cairo_set_source_rgb(cr, 0.8, 0.8, 0.8);
-    cairo_fill_preserve(cr);
-    cairo_set_source_rgb(cr, 0.0, 0.0, 0.0);
-    cairo_stroke(cr);
+    cairo_set_source_rgb(cr, 0.8, 0.8, 0.8);//couleur gri clair
+    cairo_fill_preserve(cr);//remplissage
+    cairo_set_source_rgb(cr, 0.0, 0.0, 0.0);//countour noir
+    cairo_stroke(cr);//tracer countour
 
-    cairo_move_to(cr, x + 10.0, y + 20.0);
+    cairo_move_to(cr, x + 10.0, y + 20.0);//deplacer le crayon
 
     if (block_index + 1 <= Entete(&f,5)) {
         if(!top_to_down){
@@ -652,13 +641,14 @@ static gboolean draw_block(GtkWidget *widget, cairo_t *cr, gpointer data) {
             double arrowEndY = arrowStartY;
 
             cairo_move_to(cr, arrowStartX, arrowStartY);
-            cairo_line_to(cr, arrowEndX, arrowEndY);
-            cairo_stroke(cr);
+            cairo_line_to(cr, arrowEndX, arrowEndY);//dessin ligne
+            cairo_stroke(cr);//affiche
 
             double arrowTipX = left_to_right ? arrowEndX - 10 :  arrowEndX + 10;
             double arrowTipY1 = arrowEndY - 5;
             double arrowTipY2 = arrowEndY + 5;
-
+            
+            //pointe de fleche
             cairo_move_to(cr, arrowTipX, arrowTipY1);
             cairo_line_to(cr, arrowEndX, arrowEndY);
             cairo_line_to(cr, arrowTipX, arrowTipY2);
@@ -732,7 +722,7 @@ static gboolean draw_enregistrement(GtkWidget *widget, cairo_t *cr, gpointer dat
             char temp[30];
             sprintf(temp, "Enregistrement num %i :", field_index);
             cairo_move_to(cr, x + 10.0, y_field - 2.0);
-            cairo_show_text(cr, temp);
+            cairo_show_text(cr, temp);//affiche le message
 
             char *tmp = strdup(token);
             char *tkn = strtok_r(tmp, "#", &saveptr2);
@@ -740,10 +730,10 @@ static gboolean draw_enregistrement(GtkWidget *widget, cairo_t *cr, gpointer dat
             while(tkn ){
                 double xc = x_field + i * field_width + 0.2 * sizeof(tkn);
                 cairo_rectangle(cr, xc, y_field, field_width + sizeof(tkn) / 2.0, field_height);
-                cairo_set_source_rgb(cr, 0.9, 0.9, 0.9);
-                cairo_fill_preserve(cr);
-                cairo_set_source_rgb(cr, 0.0, 0.0, 0.0);
-                cairo_stroke(cr);
+                cairo_set_source_rgb(cr, 0.9, 0.9, 0.9);//gris claire
+                cairo_fill_preserve(cr);//remplisage en preservant le chemain
+                cairo_set_source_rgb(cr, 0.0, 0.0, 0.0);//contour noir
+                cairo_stroke(cr);//dessine le
                 
                 cairo_move_to(cr, xc + 5.0, y_field + field_height - 0.3 * field_height);
                 
@@ -764,7 +754,7 @@ static gboolean draw_enregistrement(GtkWidget *widget, cairo_t *cr, gpointer dat
 }
 
 void update_gui() {
-    gtk_widget_queue_draw(drawing_area);
+    gtk_widget_queue_draw(drawing_area);//redessiner
 }
 
 
@@ -889,42 +879,6 @@ void on_creat_button_clicked(GtkWidget *widget, gpointer data) {
     }
     on_refresh_button_clicked(NULL, NULL);
     gtk_widget_destroy(dialog);
-}
-void calculate_block_position(int block_index, double *x, double *y){
-    int j = 1;
-    int tmp;
-    *x = STARTX;
-    *y = STARTY;
-    //printf("\n 2ww %f %f \n", *x, *y);
-    left_to_right = TRUE;
-    top_to_down = FALSE;
-    for (int i = Entete(&f, 1); i < block_index; i++) {
-        tmp = (j % BLOCK_PAR_LIGNE);
-        if ( tmp == BLOCK_PAR_LIGNE - 1)
-            top_to_down = TRUE;
-        else
-            top_to_down = FALSE;
-
-        if (left_to_right) {
-            *x += block_width + CELL_SPACING;
-            if (tmp == 0){
-                *x -= block_width + CELL_SPACING;
-                *y += block_height + CELL_SPACING + 50.0;
-                left_to_right = FALSE;
-            }
-        } else {
-            *x -= block_width + CELL_SPACING;
-            if (tmp == 0) {
-                *x = CELL_SPACING;
-                *y += block_height + CELL_SPACING + 50.0;
-                left_to_right = TRUE;
-            }
-        }
-        j++;
-    }
-     //printf("\n ww %f %f \n", *x, *y);
-    left_to_right = TRUE;
-    
 }
 
 static void draw_highlighted_block(cairo_t *cr, int block_index) {
