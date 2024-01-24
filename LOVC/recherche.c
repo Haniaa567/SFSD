@@ -443,6 +443,7 @@ int len(char * temp){
     }
     return i;
 }
+//procedure d'insertion
 void insert(Fichier* fichier,char* nom_physique,int numero,char* s)
  {
     Buffer buf;
@@ -459,7 +460,7 @@ void insert(Fichier* fichier,char* nom_physique,int numero,char* s)
     RechercheLOVC(fichier,nom_physique,numero,&i,&j,&trouv, NULL); //On effectue une recherche pour avoir l'adresse i et la position j où insérer
     if (trouv)
     {
-        printf("il existe\n");
+        printf("il existe\n");//pas d'insertion
         return;
     }
 
@@ -475,22 +476,22 @@ void insert(Fichier* fichier,char* nom_physique,int numero,char* s)
     while (i <= Entete(fichier, 5))
     {
         int l = k;
-        LireDir(fichier, i, &buf);
+        LireDir(fichier, i, &buf);//lire le bloc i dans le buffer
         int ll = len(buf.tab);
         
         for ( l; l < ll; l++)
         {
-            tmpChar[j++] = buf.tab[l];
+            tmpChar[j++] = buf.tab[l];//sauvegarder les donnes dans la variable temporaire pour pouvoir faire l'insertion apres
         }
         i++;
         k = 0;
      }
 
     tmpChar[j] = '\0';
-    LireDir(fichier, sauvi, &buf);
+    LireDir(fichier, sauvi, &buf);//lire le bloc ou on doit inserer notre enregistrement
     j = 0;
-    EcrireChaine(fichier, nom_physique, strlen(s), &buf, &sauvi, &sauvj, s);
-    if(tmpChar[0] != '\0')
+    EcrireChaine(fichier, nom_physique, strlen(s), &buf, &sauvi, &sauvj, s);//ecrire la nouvelle donnee insere dans le bloc a sa position
+    if(tmpChar[0] != '\0')//remettre les donnes qui se trouvent dans la variable temp a leurs places apres que l'insertion soit termine
         EcrireChaine(fichier, nom_physique, strlen(tmpChar), &buf, &sauvi, &sauvj, tmpChar);
     
     free(tmpChar);
