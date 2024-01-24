@@ -460,7 +460,7 @@ void insert(Fichier* fichier,char* nom_physique,int numero,char* s)
     RechercheLOVC(fichier,nom_physique,numero,&i,&j,&trouv, NULL); //On effectue une recherche pour avoir l'adresse i et la position j où insérer
     if (trouv)
     {
-        printf("il existe\n");//pas d'insertion
+        printf("insertion impossible,numero existant!\n");//pas d'insertion
         return;
     }
 
