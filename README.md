@@ -13,4 +13,5 @@ Une fois la compilation terminée, lancez le programme avec la commande suivante
 ./visualiseur
 Si tout se passe bien, l'interface graphique s'ouvrira.
 vous trouvrer une video de l'interface de ce programme dans le lien suivant :
+https://drive.google.com/file/d/1vGJGolSIQQw1xZE9sDzk2uU2n-tuT47C/view?usp=sharing
 
